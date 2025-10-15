@@ -1,0 +1,114 @@
+I need an app for Amazon fire kids tablets with a 
+kid friendly interface that teaches kids the 
+alphabet at the same time as it teaches them the 
+most basic of typing by showing a keyboard on 
+screen if one isn't connected, but also allows an 
+external keyboard to be connected, and whenever a 
+letter is pressed on any keyboard, the letter is 
+spoken out loud by a kid friendly voice, called 
+"Learn By Listening" mode, and a secondary mode 
+called "Spelling Bee" mode, that shows up to 4 
+letter words and speaks them allowed, then says 
+"the word (1-4 letter word) is spelled (says word 
+letter by letter)" and then prompts the child to 
+try to type those letters themselves, as the voice 
+speaks each letter allowed that is correct, or if a 
+letter is typed that isn't part of the word, the 
+voice says "I'm sorry, that's the letter (letter 
+which was typed and isn't part of the current 
+targeted word), and it is not a part of the word we 
+are trying to spell right now. Try again. The next 
+letter is (most recent letter of the target word 
+being spelled). "Learn By Listening" mode should be 
+indefinite and only function in that way. "Spelling 
+Bee" mode should have levels that increase 
+automatically by the difficulty of the word, with 1 
+and two letter words being the first and easiest 
+level, and 3 and 4 letter words being the next 
+level only after a level of 75% accuracy is 
+achieved during the first level consistently, with 
+an option for the child presented before the level 
+increases, such as "You've been doing great! If you 
+feel ready, we can begin the next level with some 
+more difficult words! Or you can stick with this 
+for a little while longer until you feel more 
+comfortable. What would you like to do?" and shows 
+2 large and easy to see and understand buttons that 
+are able to be selected for "STAY" and "Next", and 
+the voice says "This is to stay here" while the 
+button is highlighted and magnified, and then 
+"Press this for the next level" as the other button 
+is also highlighted and magnified, and waits for 
+the child's input. Once the 2nd level of 3 and 4 
+letter words has been mastered with 85% accuracy, 
+it says out loud with words on the screen to follow 
+along, "WOW I'm impressed! You're getting really 
+good at this! If you think you can handle it, let's 
+review what we've learned so far!" and repeats the 
+previously outlined button selection process for 
+moving to the next level or staying at the current 
+one. If the selection is to move on to the next 
+level, this level is words from 1-4 letters in 
+random order, with the most simple 5 letter words 
+occasionally thrown in at a rate of 1% of words as 
+compared to 90% of the words being either 1,2,3, or 
+4 letter words. This level is indefinite and the 
+words are presented at random, as long as the first 
+20 words when the level begins are not 5 letter 
+words, and no 4 letter words should be offered as 
+the target more than twice consecutively. I want 
+the entire application and the user interface to be 
+optimized for young children, and to be colorful, 
+verbose, and easy to see and read, with simple 
+animations where possible and pertinent so as to 
+hold a chids attention and be as fun as possible 
+while also being educational. The app should be 
+usable for children that can't read whole words by 
+themselves, and should be easy to use and 
+understand for a child's very first attempt at 
+learning simple letters and especially a keyboard, 
+and always be encouraging and without criticism 
+even when gently correcting mistakes. The functions 
+shouldn't be any more than outlined and necessary 
+for these goals. The app also needs to address the 
+user as "Easton", both written on screen in prompts 
+and in subtitles, and the narrator of the app who 
+speaks out loud and offers choices, speaks the 
+letters which are pressed, and any other dialogue 
+should be in a cute cartoon voice which sounds 
+natural and not at all robotic, should be presented 
+as belonging to and coming from a cartoon capybara 
+named "Caps" who is the host of the app and 
+introduces itself at the first launch whenever the 
+app is opened into a new session by saying "Hey 
+there! My name is Caps the Capybara, and I'd I'm 
+here to help you learn some letters, words, and 
+typing. I like to have fun and learn and I hope you 
+do too! Go ahead and choose which way you'd like to 
+begin today!" and thats when the main menu at the 
+app's homepage is shown, which shows two buttons in 
+the same large, clear, colorful, with rich contrast 
+between the text and the rest of the button so that 
+it's easy to read and understand style as outlined 
+already in app, and waits for the selection by the 
+user. When the app is launched for the very first 
+time, Caps tells the user, (Easton) that since he's 
+never played this game before, he should start in 
+"Learn By Listening" mode, and that during the 
+game, it's very important he can hear me (Caps) at 
+all times, so to make sure he's somewhere that is 
+quiet without other distractions and that now is 
+the time to put headphones in if theyre not 
+detected as plugged in or connected wirelessly. 
+After the selection of the desired mode of play for 
+the very first time, the introduction by Caps and 
+the recommendation of the first of the two levels 
+are no longer spoken outl loud or on screen, and 
+every other time the app is launched after the very 
+first, Easton (the user) is greeted by showing the 
+cartoon image of Caps with very simple and subtle 
+animation, and speech bubbles from the cartoons 
+mouth which has subtitles that generate as the 
+narration is being spoken and stays shown on the 
+screen for as long as possible due to screen size 
+constraints.
