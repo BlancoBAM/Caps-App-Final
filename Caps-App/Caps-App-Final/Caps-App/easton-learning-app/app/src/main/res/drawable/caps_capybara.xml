@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    
+    <!-- Capybara body -->
+    <path
+        android:fillColor="#D2691E"
+        android:pathData="M50,120 Q50,90 80,90 L120,90 Q150,90 150,120 L150,160 Q150,180 130,180 L70,180 Q50,180 50,160 Z"/>
+    
+    <!-- Capybara head -->
+    <ellipse
+        android:fillColor="#D2691E"
+        android:cx="100"
+        android:cy="80"
+        android:rx="45"
+        android:ry="35"/>
+    
+    <!-- Eyes -->
+    <circle
+        android:fillColor="#000000"
+        android:cx="85"
+        android:cy="75"
+        android:r="4"/>
+    <circle
+        android:fillColor="#000000"
+        android:cx="115"
+        android:cy="75"
+        android:r="4"/>
+    
+    <!-- Nose -->
+    <ellipse
+        android:fillColor="#8B4513"
+        android:cx="100"
+        android:cy="85"
+        android:rx="3"
+        android:ry="2"/>
+    
+    <!-- Mouth -->
+    <path
+        android:strokeColor="#8B4513"
+        android:strokeWidth="2"
+        android:fillColor="none"
+        android:pathData="M95,90 Q100,95 105,90"/>
+    
+    <!-- Ears -->
+    <ellipse
+        android:fillColor="#D2691E"
+        android:cx="75"
+        android:cy="60"
+        android:rx="8"
+        android:ry="12"/>
+    <ellipse
+        android:fillColor="#D2691E"
+        android:cx="125"
+        android:cy="60"
+        android:rx="8"
+        android:ry="12"/>
+    
+    <!-- Legs -->
+    <ellipse
+        android:fillColor="#D2691E"
+        android:cx="70"
+        android:cy="175"
+        android:rx="8"
+        android:ry="15"/>
+    <ellipse
+        android:fillColor="#D2691E"
+        android:cx="90"
+        android:cy="175"
+        android:rx="8"
+        android:ry="15"/>
+    <ellipse
+        android:fillColor="#D2691E"
+        android:cx="110"
+        android:cy="175"
+        android:rx="8"
+        android:ry="15"/>
+    <ellipse
+        android:fillColor="#D2691E"
+        android:cx="130"
+        android:cy="175"
+        android:rx="8"
+        android:ry="15"/>
+</vector>
