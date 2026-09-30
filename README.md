@@ -1,69 +1,121 @@
-# Caps-App - Learn By Listening
+# 🦫 Caps App — Interactive Learning & Spelling Adventure
 
-A kid-friendly Android learning app featuring Caps the Capybara that teaches alphabet recognition and basic typing skills.
+[![Platform](https://img.shields.io/badge/Platform-Android%205.0%2B%20(API%2022--33)-3DDC84?logo=android&logoColor=white)](https://developer.android.com)
+[![Build Status](https://img.shields.io/badge/Build-Passing-brightgreen?logo=gradle&logoColor=white)](https://gradle.org)
+[![Java](https://img.shields.io/badge/Language-Java%2017%20%2F%201.8-ED8B00?logo=openjdk&logoColor=white)](https://openjdk.org)
+[![Orientation](https://img.shields.io/badge/Orientation-Landscape%20Optimized-blue)](https://developer.android.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-## Features Implemented
+An engaging, kid-friendly Android educational app featuring **Caps the Capybara** — designed to teach letter identification, phonics, and spelling skills through multi-sensory interactive gameplay.
 
-### Core Functionality
-- **Learn By Listening Mode**: Interactive alphabet learning with voice feedback
-- **Spelling Bee Mode**: Progressive word spelling with three difficulty levels
-- **External Keyboard Support**: Works with both on-screen and physical keyboards
-- **Text-to-Speech**: Kid-friendly voice with encouraging feedback
+---
 
-### Character & Design
-- **Caps the Capybara**: Animated capybara mascot with gentle breathing animation
-- **Speech Bubbles**: Animated speech bubbles with typing effect for subtitles
-- **Colorful Interface**: Vibrant, kid-friendly color scheme optimized for young learners
-- **Kid-Optimized Layout**: Large buttons, high contrast text, easy navigation
+## 🌟 Key Features
 
-### Educational Features
-- **Progressive Difficulty**: 
-  - Level 1: 1-2 letter words (75% accuracy required)
-  - Level 2: 3-4 letter words (85% accuracy required)
-  - Level 3: Mixed difficulty with controlled 5-letter word introduction
-- **Smart Word Selection**: Prevents consecutive difficult words, gradual complexity increase
-- **Progress Tracking**: Saves learning progress across sessions
-- **Encouraging Feedback**: Positive reinforcement without criticism
+### 🔤 Learn By Listening Mode
+- **Phonics & Letter Exploration**: Touch on-screen keys or type on a keyboard to hear letter names and phonetic associations (*"A is for Apple 🍎"*, *"B is for Bear 🐻"*).
+- **Interactive Card Bounces**: Animated visual letter display with lively bounce feedback upon each keypress.
+- **Exploration Counter**: Live top-bar tracking of letters explored during the session.
 
-### Technical Features
-- **First Launch Experience**: Proper introduction with headphone detection
-- **Audio Optimization**: Detects headphones, recommends quiet environment
-- **Level Advancement**: Animated button highlighting with voice guidance
-- **Session Persistence**: Saves current level and progress between app launches
+### 🐝 Spelling Bee Mode
+- **Multi-Level Progressive Learning**:
+  - **Level 1 (Easy)**: 2–3 letter words (*cat, dog, sun, hat, bee*).
+  - **Level 2 (Medium)**: 4-letter words (*frog, duck, star, lion, book*).
+  - **Level 3 (Advanced)**: 5+ letter words (*apple, tiger, puppy, smile, happy*).
+- **Interactive Letter Boxes**: Target words displayed as visual slots (`[ ? ] [ _ ] [ _ ]`). Active letters pulse yellow, correct entries flash emerald green, and wrong entries shake red.
+- **Instant Encouragement**: Friendly voice hints (*"That's X! Try pressing C!"*) keep children motivated without frustration.
+- **Audio Replay**: One-tap `🔊 Hear Word` button repeats word pronunciation and spelling aloud.
+- **Victory Celebrations**: Celebratory star bursts and congratulatory messages after completing words.
 
-## App Structure
+### 🦫 Animated Mascot — Caps the Capybara
+- **Syllable-Accurate Speech**: Caps's mouth opens and closes naturally in exact sync with word syllables (single-syllable words open and close once smoothly; multi-word sentences animate at conversational cadence).
+- **Angled Presentation**: Positioned on the left and angled 3/4 right toward the speech bubble and board.
+- **Speech Bubble Connection**: Dynamic speech bubble with a left-facing pointer tail connecting directly to Caps's mouth.
+- **Lifelike Character**: Organic eye blinks every ~3.5 seconds, gentle breathing idle cycle, and signature yuzu/orange fruit on its head.
+
+### ⌨️ Dual Keyboard Input
+- **On-Screen Touch Keyboard**: Vibrantly colored, 3-row QWERTY keyboard with tactile touch-press animation.
+- **Physical / External Keyboard Integration**: Plug in any USB or Bluetooth keyboard. Typing physical keys instantly triggers a gold highlight glow (`#FACC15`) and scale bounce on the corresponding on-screen key.
+- **Backspace & Delete Support**: `⌫ DEL` key on-screen and hardware Backspace key support undoing spelling input.
+
+### 👤 Personalization & Progress Tracking
+- **First-Launch Onboarding**: Asks for the child's name with an intuitive, friendly entry modal and "LET'S PLAY! 🎉" button.
+- **Personalized Addressing**: Caps addresses the child by name throughout speech bubbles, voice greetings, and praise.
+- **One-Tap Profile Editing**: Tapping the top-bar player badge (`👤 [Name] ✏️`) allows switching or updating the player name anytime.
+- **Data Persistence**: Child name, levels, correct answers, and missed attempts are safely saved across sessions via `SharedPreferences`.
+
+---
+
+## 📱 App Architecture & Structure
+
 ```
-easton-learning-app/
-├── app/src/main/java/com/eastonlearning/
-│   ├── MainActivity.java - Main app logic and game modes
-│   ├── OnScreenKeyboard.java - Colorful QWERTY keyboard
-│   └── SpeechBubbleView.java - Animated speech bubble system
-└── app/src/main/res/
-    ├── drawable/ - UI elements and capybara character
-    ├── layout/ - Main activity layout
-    └── values/ - Colors and app configuration
+Caps-App-Final/
+├── Caps-Updated.apk                 # Latest compiled production debug APK
+├── README.md                        # Documentation and guide
+├── build_and_setup.sh               # Automated Android SDK setup and build script
+└── easton-learning-app/
+    ├── app/
+    │   ├── build.gradle             # Application dependencies and SDK configuration
+    │   └── src/main/
+    │       ├── AndroidManifest.xml  # Manifest with landscape & fullscreen configuration
+    │       ├── java/com/eastonlearning/
+    │       │   ├── MainActivity.java      # Game state manager, TTS, scoring & navigation
+    │       │   ├── CapybaraView.java      # Custom animated mascot with syllable timing
+    │       │   ├── SpeechBubbleView.java  # Custom speech bubble with left pointer tail
+    │       │   └── OnScreenKeyboard.java  # Touch & external keyboard highlight controller
+    │       └── res/
+    │           ├── drawable/        # Tactile buttons, mode cards, letter boxes & themes
+    │           ├── layout/          # Landscape responsive activity layout
+    │           └── values/          # Color schemes and app tokens
+    ├── build.gradle                 # Project-level Gradle build configuration
+    ├── gradle.properties            # JVM & AndroidX build settings
+    └── settings.gradle              # Module settings
 ```
 
-## Usage Instructions
+---
 
-### First Launch
-1. App introduces Caps the Capybara
-2. Checks for headphones and recommends quiet environment
-3. Starts with "Learn By Listening" mode as recommended
+## 🛠️ Build & Installation
 
-### Learn By Listening Mode
-- Press any letter key (on-screen or external keyboard)
-- Caps speaks the letter name
-- Visual feedback shows encouragement
-- Indefinite exploration mode
+### Prerequisites
+- **JDK**: Java 17 (`openjdk-17-jdk`)
+- **Android SDK**: Build Tools 33.0.2, Platform 33 (`android-33`)
+- **Gradle**: 7.5 (bundled via `./gradlew`)
 
-### Spelling Bee Mode
-- Three progressive levels with accuracy requirements
-- Words spoken first, then spelled letter by letter
-- Child types each letter with real-time feedback
-- Level advancement with animated choice prompts
+### Build from Source
+```bash
+cd easton-learning-app
+export ANDROID_HOME="$HOME/Android/Sdk"
+export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
 
-### Navigation
-- Back button returns to main menu
-- External keyboard fully supported
-- Touch-friendly for tablets
+chmod +x gradlew
+./gradlew assembleDebug
+```
+The output APK will be generated at:
+`easton-learning-app/app/build/outputs/apk/debug/app-debug.apk`
+
+---
+
+## 🧪 Testing & Running on Emulator / Device
+
+To run the app on an Android emulator or connected device:
+
+```bash
+export ANDROID_HOME="$HOME/Android/Sdk"
+export PATH="$PATH:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
+
+# 1. Start emulator (if not already running)
+$ANDROID_HOME/emulator/emulator -avd CapsTestAVD -no-audio -no-boot-anim -gpu swiftshader_indirect &
+
+# 2. Wait for device and install updated APK
+adb wait-for-device
+adb install -r Caps-Updated.apk
+
+# 3. Launch the application
+adb shell am start -n com.eastonlearning/.MainActivity
+```
+
+---
+
+## 🏷️ Tags & Metadata
+
+`#Android` `#EducationalApp` `#KidsLearning` `#SpellingBee` `#Phonics` `#Capybara` `#CustomViews` `#TextToSpeech` `#KidFriendly` `#Java` `#AndroidDev`

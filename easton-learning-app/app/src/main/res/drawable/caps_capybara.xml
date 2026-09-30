@@ -1,87 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- Simple placeholder — the actual capybara is drawn by CapybaraView in code -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="200dp"
     android:height="200dp"
     android:viewportWidth="200"
     android:viewportHeight="200">
-    
-    <!-- Capybara body -->
+
+    <!-- Body -->
     <path
-        android:fillColor="#D2691E"
+        android:fillColor="#C8860A"
         android:pathData="M50,120 Q50,90 80,90 L120,90 Q150,90 150,120 L150,160 Q150,180 130,180 L70,180 Q50,180 50,160 Z"/>
-    
-    <!-- Capybara head -->
-    <ellipse
-        android:fillColor="#D2691E"
-        android:cx="100"
-        android:cy="80"
-        android:rx="45"
-        android:ry="35"/>
-    
-    <!-- Eyes -->
-    <circle
-        android:fillColor="#000000"
-        android:cx="85"
-        android:cy="75"
-        android:r="4"/>
-    <circle
-        android:fillColor="#000000"
-        android:cx="115"
-        android:cy="75"
-        android:r="4"/>
-    
-    <!-- Nose -->
-    <ellipse
-        android:fillColor="#8B4513"
-        android:cx="100"
-        android:cy="85"
-        android:rx="3"
-        android:ry="2"/>
-    
-    <!-- Mouth -->
+
+    <!-- Head -->
     <path
-        android:strokeColor="#8B4513"
-        android:strokeWidth="2"
-        android:fillColor="none"
-        android:pathData="M95,90 Q100,95 105,90"/>
-    
-    <!-- Ears -->
-    <ellipse
-        android:fillColor="#D2691E"
-        android:cx="75"
-        android:cy="60"
-        android:rx="8"
-        android:ry="12"/>
-    <ellipse
-        android:fillColor="#D2691E"
-        android:cx="125"
-        android:cy="60"
-        android:rx="8"
-        android:ry="12"/>
-    
-    <!-- Legs -->
-    <ellipse
-        android:fillColor="#D2691E"
-        android:cx="70"
-        android:cy="175"
-        android:rx="8"
-        android:ry="15"/>
-    <ellipse
-        android:fillColor="#D2691E"
-        android:cx="90"
-        android:cy="175"
-        android:rx="8"
-        android:ry="15"/>
-    <ellipse
-        android:fillColor="#D2691E"
-        android:cx="110"
-        android:cy="175"
-        android:rx="8"
-        android:ry="15"/>
-    <ellipse
-        android:fillColor="#D2691E"
-        android:cx="130"
-        android:cy="175"
-        android:rx="8"
-        android:ry="15"/>
+        android:fillColor="#C8860A"
+        android:pathData="M55,80 Q55,48 100,48 Q145,48 145,80 Q145,112 100,112 Q55,112 55,80 Z"/>
+
+    <!-- Left eye -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M82,74 Q82,68 88,68 Q94,68 94,74 Q94,80 88,80 Q82,80 82,74 Z"/>
+
+    <!-- Right eye -->
+    <path
+        android:fillColor="#1A1A1A"
+        android:pathData="M106,74 Q106,68 112,68 Q118,68 118,74 Q118,80 112,80 Q106,80 106,74 Z"/>
+
+    <!-- Nose -->
+    <path
+        android:fillColor="#7A3B10"
+        android:pathData="M92,86 Q100,82 108,86 Q100,92 92,86 Z"/>
+
+    <!-- Smile -->
+    <path
+        android:strokeColor="#7A3B10"
+        android:strokeWidth="3"
+        android:fillColor="#00000000"
+        android:pathData="M88,96 Q100,106 112,96"/>
+
+    <!-- Left ear -->
+    <path
+        android:fillColor="#A06008"
+        android:pathData="M67,56 Q67,40 75,40 Q83,40 83,56 Q83,64 75,64 Q67,64 67,56 Z"/>
+
+    <!-- Right ear -->
+    <path
+        android:fillColor="#A06008"
+        android:pathData="M117,56 Q117,40 125,40 Q133,40 133,56 Q133,64 125,64 Q117,64 117,56 Z"/>
+
 </vector>

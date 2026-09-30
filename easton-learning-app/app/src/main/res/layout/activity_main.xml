@@ -1,90 +1,287 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/gradient_background"
-    android:padding="16dp">
+    android:orientation="vertical"
+    android:padding="6dp">
 
-    <ImageView
-        android:id="@+id/capsImage"
-        android:layout_width="200dp"
-        android:layout_height="200dp"
-        android:layout_centerHorizontal="true"
-        android:layout_marginTop="20dp"
-        android:src="@drawable/caps_capybara"
-        android:contentDescription="Caps the Capybara" />
-
-    <com.eastonlearning.SpeechBubbleView
-        android:id="@+id/speechBubble"
-        android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:layout_below="@id/capsImage"
-        android:layout_marginTop="20dp"
-        android:layout_marginStart="20dp"
-        android:layout_marginEnd="20dp"
-        android:visibility="gone" />
-
-    <TextView
-        android:id="@+id/mainText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/speechBubble"
-        android:layout_marginTop="10dp"
-        android:layout_marginBottom="30dp"
-        android:text="Welcome Easton!"
-        android:textSize="28sp"
-        android:textColor="#2E7D32"
-        android:textAlignment="center"
-        android:fontFamily="sans-serif-medium"
-        android:lineSpacingExtra="8dp"
-        android:padding="20dp"
-        android:background="@drawable/text_bubble"
-        android:elevation="4dp" />
-
+    <!-- ── 1. Top Bar: Navigation, Profile & Live Stats ─────────────────────── -->
     <LinearLayout
-        android:id="@+id/buttonContainer"
+        android:id="@+id/topBar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/mainText"
-        android:layout_marginTop="20dp"
+        android:layout_height="40dp"
+        android:background="@drawable/top_bar_background"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
-        android:gravity="center">
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:elevation="3dp">
 
         <Button
-            android:id="@+id/button1"
-            android:layout_width="0dp"
-            android:layout_height="80dp"
-            android:layout_weight="1"
-            android:layout_marginEnd="10dp"
-            android:text="BUTTON 1"
-            android:textSize="20sp"
-            android:textColor="@android:color/white"
-            android:background="@drawable/button_style"
-            android:elevation="6dp"
-            android:fontFamily="sans-serif-medium" />
+            android:id="@+id/btnMenu"
+            android:layout_width="wrap_content"
+            android:layout_height="32dp"
+            android:background="@drawable/btn_menu"
+            android:text="⬅ MENU"
+            android:textColor="#334155"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:visibility="gone" />
 
-        <Button
-            android:id="@+id/button2"
+        <TextView
+            android:id="@+id/txtPlayer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="12dp"
+            android:text="👤 Player: Friend ✏️"
+            android:textColor="#1E293B"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <View
             android:layout_width="0dp"
-            android:layout_height="80dp"
-            android:layout_weight="1"
-            android:layout_marginStart="10dp"
-            android:text="BUTTON 2"
-            android:textSize="20sp"
-            android:textColor="@android:color/white"
-            android:background="@drawable/button_style"
-            android:elevation="6dp"
-            android:fontFamily="sans-serif-medium" />
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <TextView
+            android:id="@+id/txtStats"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="⭐ Welcome!"
+            android:textColor="#166534"
+            android:textSize="14sp"
+            android:textStyle="bold" />
 
     </LinearLayout>
 
-    <com.eastonlearning.OnScreenKeyboard
-        android:id="@+id/onScreenKeyboard"
+    <!-- ── 2. Main Body: Mascot on Left, Interactive Zone on Right ─────────── -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/buttonContainer"
-        android:layout_marginTop="30dp"
-        android:layout_centerHorizontal="true"
-        android:visibility="gone" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:layout_marginTop="4dp">
 
-</RelativeLayout>
+        <!-- Left: Animated Capybara Mascot (facing right towards bubble) -->
+        <FrameLayout
+            android:layout_width="160dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="center">
+
+            <com.eastonlearning.CapybaraView
+                android:id="@+id/capsImage"
+                android:layout_width="155dp"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:contentDescription="Caps the Capybara Mascot" />
+
+        </FrameLayout>
+
+        <!-- Right: Speech Bubble, Content Panel, and Keyboard -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:paddingStart="4dp"
+            android:paddingEnd="4dp">
+
+            <!-- Speech Bubble (Tail on left connects to Capybara's mouth) -->
+            <com.eastonlearning.SpeechBubbleView
+                android:id="@+id/speechBubble"
+                android:layout_width="match_parent"
+                android:layout_height="62dp"
+                android:layout_marginBottom="4dp" />
+
+            <!-- Dynamic Interactive Area -->
+            <FrameLayout
+                android:id="@+id/contentFrame"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <!-- Mode A: Name Entry Panel -->
+                <LinearLayout
+                    android:id="@+id/nameEntryPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:visibility="gone">
+
+                    <EditText
+                        android:id="@+id/nameInput"
+                        android:layout_width="220dp"
+                        android:layout_height="48dp"
+                        android:background="@drawable/card_background"
+                        android:hint="Type your name..."
+                        android:imeOptions="actionDone"
+                        android:inputType="textPersonName|textCapWords"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:textColor="#1E293B"
+                        android:textColorHint="#94A3B8"
+                        android:textSize="18sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/nameSubmitButton"
+                        android:layout_width="wrap_content"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="10dp"
+                        android:background="@drawable/btn_primary"
+                        android:text="LET'S PLAY! 🎉"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:paddingStart="16dp"
+                        android:paddingEnd="16dp"
+                        android:elevation="4dp" />
+
+                </LinearLayout>
+
+                <!-- Mode B: Main Menu Mode Selection Buttons -->
+                <LinearLayout
+                    android:id="@+id/menuPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:visibility="visible"
+                    android:padding="6dp">
+
+                    <Button
+                        android:id="@+id/btnLearnByListening"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/mode_button_lbl"
+                        android:text="🔤 LEARN BY LISTENING\nExplore letters &amp; sounds!"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:lineSpacingExtra="4dp"
+                        android:elevation="6dp" />
+
+                    <Button
+                        android:id="@+id/btnSpellingBee"
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:layout_weight="1"
+                        android:layout_marginStart="8dp"
+                        android:background="@drawable/mode_button_bee"
+                        android:text="🐝 SPELLING BEE\nSpell fun words with Caps!"
+                        android:textColor="#FFFFFF"
+                        android:textSize="16sp"
+                        android:textStyle="bold"
+                        android:lineSpacingExtra="4dp"
+                        android:elevation="6dp" />
+
+                </LinearLayout>
+
+                <!-- Mode C: Learn By Listening Display -->
+                <LinearLayout
+                    android:id="@+id/lblPanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="horizontal"
+                    android:background="@drawable/card_background"
+                    android:padding="8dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:id="@+id/txtBigLetter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="A"
+                        android:textColor="#2563EB"
+                        android:textSize="40sp"
+                        android:textStyle="bold"
+                        android:paddingEnd="14dp" />
+
+                    <TextView
+                        android:id="@+id/txtPhonics"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="A is for Apple 🍎"
+                        android:textColor="#166534"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                </LinearLayout>
+
+                <!-- Mode D: Spelling Bee Display (Letter Boxes & Hint) -->
+                <LinearLayout
+                    android:id="@+id/spellingBeePanel"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:visibility="gone">
+
+                    <!-- Letter boxes dynamically populated for target word -->
+                    <LinearLayout
+                        android:id="@+id/letterBoxesContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:orientation="horizontal" />
+
+                    <!-- Hint / Repeat row -->
+                    <LinearLayout
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/txtSpellingHint"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Spell the word above!"
+                            android:textColor="#1E293B"
+                            android:textSize="14sp"
+                            android:textStyle="bold"
+                            android:layout_marginEnd="12dp" />
+
+                        <Button
+                            android:id="@+id/btnRepeatWord"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:background="@drawable/btn_primary"
+                            android:text="🔊 Hear Word"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:paddingStart="10dp"
+                            android:paddingEnd="10dp"
+                            android:elevation="3dp" />
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </FrameLayout>
+
+            <!-- On-Screen Keyboard: visible in Learn By Listening & Spelling Bee -->
+            <com.eastonlearning.OnScreenKeyboard
+                android:id="@+id/onScreenKeyboard"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+</LinearLayout>

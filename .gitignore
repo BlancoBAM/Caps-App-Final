@@ -1,0 +1,10 @@
+# Built binaries and intermediate outputs
+**/build/
+.gradle/
+*.iml
+.idea/
+local.properties
+.DS_Store
+*.hprof
+.cxx/
+captures/

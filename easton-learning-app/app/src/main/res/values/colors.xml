@@ -12,4 +12,5 @@
     <color name="background_light">#E8F5E8</color>
     <color name="white">#FFFFFF</color>
     <color name="button_pressed">#388E3C</color>
+    <color name="ic_launcher_background">#4CAF50</color>
 </resources>
