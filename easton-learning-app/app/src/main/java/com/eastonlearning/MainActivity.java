@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -22,7 +23,6 @@ import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import java.util.ArrayList;
@@ -35,6 +35,7 @@ import java.util.Random;
 public class MainActivity extends Activity implements TextToSpeech.OnInitListener {
 
     private TextToSpeech tts;
+    private MediaPlayer mediaPlayer;
     private SharedPreferences prefs;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Runnable stopTalkingRunnable;
@@ -44,17 +45,20 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private boolean isFirstLaunch = true;
 
     // Game Modes & Levels
-    private enum GameMode { NAME_ENTRY, MENU, LEARN_BY_LISTENING, SPELLING_BEE }
-    private enum SpellingLevel { LEVEL_1, LEVEL_2, LEVEL_3 }
+    public enum GameMode { NAME_ENTRY, MENU, LEARN_BY_LISTENING, SPELLING_BEE }
+    public enum SpellingLevel { LEVEL_1, LEVEL_2, LEVEL_3 }
 
     private GameMode currentMode = GameMode.MENU;
     private SpellingLevel currentLevel = SpellingLevel.LEVEL_1;
 
-    // Game stats
+    // Game stats (all persisted)
     private int correctAnswers = 0;
     private int missedAnswers = 0;
     private int lettersExplored = 0;
     private int wordsCompletedInSession = 0;
+    private int level1Completed = 0;
+    private int level2Completed = 0;
+    private int level3Completed = 0;
 
     // Spelling state
     private String currentWord = "";
@@ -63,7 +67,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private final Random random = new Random();
 
     // UI Elements
-    private TextView txtPlayer, txtStats;
+    private TextView txtPlayer, txtStats, txtLevelBadge;
     private Button btnMenu;
     private CapybaraView capsView;
     private SpeechBubbleView speechBubble;
@@ -85,23 +89,41 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private TextView txtSpellingHint;
     private Button btnRepeatWord;
 
-    // Word Dictionaries
+    // ── Word Dictionaries (Expanded: 1-Letter to 3-Syllable Words) ───────────
+
+    // Level 1: 1-Syllable Early Readers (1–3 letters)
     private final String[] level1Words = {
-            "cat", "dog", "sun", "hat", "pig", "fox", "bed", "cup",
-            "car", "bus", "run", "hop", "red", "big", "fun", "bee",
-            "bat", "cow", "box", "toy", "pen", "ice", "jam", "pie"
+            "a", "i", "go", "no", "up", "me", "we", "he", "be", "to",
+            "do", "it", "at", "on", "in", "is", "am", "or", "so", "my",
+            "by", "cat", "dog", "sun", "hat", "pig", "fox", "bed", "cup",
+            "car", "bus", "run", "hop", "red", "big", "fun", "bee", "bat",
+            "cow", "box", "toy", "pen", "ice", "jam", "pie", "hen", "ant",
+            "owl", "egg", "nut", "bag", "web", "map", "sit", "hit", "pot",
+            "top", "van", "rug", "bug", "log", "mud", "net", "lip", "tub"
     };
 
+    // Level 2: 1-to-2 Syllable Everyday Words (4–5 letters)
     private final String[] level2Words = {
             "frog", "duck", "bear", "fish", "star", "tree", "bird", "lion",
-            "cake", "boat", "moon", "book", "baby", "play", "jump", "ball",
-            "door", "lamp", "milk", "nest", "park", "ring", "shoe", "wind"
+            "cake", "boat", "moon", "book", "ball", "door", "lamp", "milk",
+            "nest", "park", "ring", "shoe", "wind", "leaf", "ship", "bell",
+            "drum", "flag", "hand", "jump", "king", "play", "rain", "snow",
+            "swim", "kite", "baby", "water", "apple", "puppy", "kitty", "happy",
+            "panda", "tiger", "zebra", "pizza", "bunny", "sunny", "candy",
+            "cookie", "funny", "magic", "music", "robot", "cloudy", "picnic",
+            "monkey", "pencil", "pocket", "yellow", "purple", "orange", "flower",
+            "garden", "castle", "rocket"
     };
 
+    // Level 3: 2-to-3 Syllable Challenge Words (5–10 letters)
     private final String[] level3Words = {
-            "apple", "tiger", "horse", "puppy", "water", "smile", "happy",
-            "cloud", "music", "house", "robot", "zebra", "magic", "brave",
-            "candy", "flower", "garden", "kitten", "monkey", "planet"
+            "rainbow", "sunshine", "dolphin", "feather", "window", "blanket",
+            "butterfly", "banana", "elephant", "dinosaur", "umbrella", "sunflower",
+            "caterpillar", "hospital", "computer", "adventure", "together",
+            "wonderful", "capybara", "fantastic", "alphabet", "pineapple",
+            "watermelon", "chocolate", "instrument", "tomorrow", "beautiful",
+            "lemonade", "basketball", "marshmallow", "octopus", "helicopter",
+            "astronaut", "telescope"
     };
 
     // Phonics associations for Learn by Listening
@@ -158,6 +180,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         childName = prefs.getString("childName", "");
         correctAnswers = prefs.getInt("correctAnswers", 0);
         missedAnswers = prefs.getInt("missedAnswers", 0);
+        level1Completed = prefs.getInt("level1Completed", 0);
+        level2Completed = prefs.getInt("level2Completed", 0);
+        level3Completed = prefs.getInt("level3Completed", 0);
 
         String savedLevel = prefs.getString("currentLevel", "LEVEL_1");
         try {
@@ -173,6 +198,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
                 .putBoolean("isFirstLaunch", isFirstLaunch)
                 .putInt("correctAnswers", correctAnswers)
                 .putInt("missedAnswers", missedAnswers)
+                .putInt("level1Completed", level1Completed)
+                .putInt("level2Completed", level2Completed)
+                .putInt("level3Completed", level3Completed)
                 .putString("currentLevel", currentLevel.name())
                 .apply();
     }
@@ -181,6 +209,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         // Top Bar
         txtPlayer = findViewById(R.id.txtPlayer);
         txtStats = findViewById(R.id.txtStats);
+        txtLevelBadge = findViewById(R.id.txtLevelBadge);
         btnMenu = findViewById(R.id.btnMenu);
 
         // Mascot & Bubble & Keyboard
@@ -212,6 +241,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         // Click Listeners
         btnMenu.setOnClickListener(v -> showMainMenu());
         txtPlayer.setOnClickListener(v -> showNameEntry());
+        txtLevelBadge.setOnClickListener(v -> cycleDifficultyLevel());
         btnLearnByListening.setOnClickListener(v -> startLearnByListening());
         btnSpellingBee.setOnClickListener(v -> startSpellingBee());
         btnRepeatWord.setOnClickListener(v -> repeatCurrentWord());
@@ -231,6 +261,34 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         updatePlayerHeader();
     }
 
+    private void cycleDifficultyLevel() {
+        if (currentLevel == SpellingLevel.LEVEL_1) {
+            currentLevel = SpellingLevel.LEVEL_2;
+        } else if (currentLevel == SpellingLevel.LEVEL_2) {
+            currentLevel = SpellingLevel.LEVEL_3;
+        } else {
+            currentLevel = SpellingLevel.LEVEL_1;
+        }
+        savePreferences();
+        updateScoreDisplay();
+
+        String levelDesc = getLevelDescription(currentLevel);
+        playSoundOrSpeak("nav_level_switch", "Level switched to " + levelDesc + "!");
+
+        if (currentMode == GameMode.SPELLING_BEE) {
+            nextSpellingWord();
+        }
+    }
+
+    private String getLevelDescription(SpellingLevel level) {
+        switch (level) {
+            case LEVEL_2: return "Level 2: 1 to 2 Syllables";
+            case LEVEL_3: return "Level 3: 2 to 3 Syllables";
+            case LEVEL_1:
+            default:      return "Level 1: 1 Syllable";
+        }
+    }
+
     private void initializeTTS() {
         tts = new TextToSpeech(this, this);
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
@@ -246,7 +304,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
                 @Override
                 public void onStart(String utteranceId) {
-                    // Mouth is already started synchronously based on syllables
+                    // Mouth is already initiated cleanly with syllables or continuous
                 }
 
                 @Override
@@ -274,9 +332,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
             // Initial audio welcome based on current mode
             if (currentMode == GameMode.NAME_ENTRY) {
-                speak("Hi there! I'm Caps the Capybara! What's your name?");
+                playSoundOrSpeak("welcome_first", "Hi there! I'm Caps the Capybara! What's your name?");
             } else if (currentMode == GameMode.MENU) {
-                speak("Hi " + childName + "! Choose how you'd like to learn today!");
+                playSoundOrSpeak("welcome_back", "Hi " + childName + "! Choose how you'd like to learn today!");
             }
         }
     }
@@ -291,12 +349,16 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
     private void updateScoreDisplay() {
         if (currentMode == GameMode.SPELLING_BEE) {
-            String lvl = (currentLevel == SpellingLevel.LEVEL_1) ? "Lvl 1" :
-                    (currentLevel == SpellingLevel.LEVEL_2 ? "Lvl 2" : "Lvl 3");
-            txtStats.setText("⭐ " + lvl + " | ✅ " + correctAnswers + "  ❌ " + missedAnswers);
+            txtLevelBadge.setVisibility(View.VISIBLE);
+            String lvlShort = (currentLevel == SpellingLevel.LEVEL_1) ? "🎯 Lvl 1 (1-Syl) ▾" :
+                    (currentLevel == SpellingLevel.LEVEL_2 ? "🎯 Lvl 2 (1-2 Syl) ▾" : "🎯 Lvl 3 (2-3 Syl) ▾");
+            txtLevelBadge.setText(lvlShort);
+            txtStats.setText("✅ " + correctAnswers + "  ❌ " + missedAnswers);
         } else if (currentMode == GameMode.LEARN_BY_LISTENING) {
+            txtLevelBadge.setVisibility(View.GONE);
             txtStats.setText("🔤 Letters Explored: " + lettersExplored);
         } else {
+            txtLevelBadge.setVisibility(View.GONE);
             txtStats.setText("⭐ Welcome!");
         }
     }
@@ -319,7 +381,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         }
 
         String msg = "Hi there! I'm Caps the Capybara! What's your name?";
-        speak(msg);
+        playSoundOrSpeak("ask_name", msg);
         updateScoreDisplay();
     }
 
@@ -343,7 +405,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         }
 
         String welcome = "Awesome to meet you, " + childName + "! Let's have fun!";
-        speak(welcome);
+        playSoundOrSpeak("welcome_confirmed", welcome);
 
         mainHandler.postDelayed(this::showMainMenu, 1400);
     }
@@ -361,7 +423,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         onScreenKeyboard.setVisibility(View.GONE);
 
         String greeting = "Hi " + childName + "! Choose how you'd like to learn today!";
-        speak(greeting);
+        playSoundOrSpeak("menu_greeting", greeting);
         updatePlayerHeader();
         updateScoreDisplay();
     }
@@ -382,7 +444,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         txtPhonics.setText("Touch or type any letter to hear its sound!");
 
         String prompt = "Touch any letter on screen or press a key, " + childName + "!";
-        speak(prompt);
+        playSoundOrSpeak("lbl_intro", prompt);
         updateScoreDisplay();
     }
 
@@ -406,7 +468,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         anim.setDuration(240);
         anim.start();
 
-        speak(spokenPhrase);
+        playSoundOrSpeak("letter_" + Character.toLowerCase(upper), spokenPhrase);
     }
 
     // ── 4. Spelling Bee Mode ──────────────────────────────────────────────────
@@ -435,7 +497,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         txtSpellingHint.setText("Spell: " + currentWord.toUpperCase());
 
         String prompt = "Can you spell " + currentWord + ", " + childName + "? The first letter is " + firstLetter + "!";
-        speak(prompt);
+        playSoundOrSpeak("word_" + currentWord.toLowerCase(), prompt);
     }
 
     private String pickWordForLevel() {
@@ -459,8 +521,10 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         letterBoxesContainer.removeAllViews();
         letterBoxViews.clear();
 
-        int boxSize = dpToPx(44);
-        int margin = dpToPx(5);
+        // Dynamically adjust box size based on word length so 8+ letter words fit comfortably
+        int boxSize = dpToPx(word.length() > 6 ? 36 : 44);
+        int margin = dpToPx(word.length() > 6 ? 3 : 5);
+        int fontSize = word.length() > 6 ? 18 : 22;
 
         for (int i = 0; i < word.length(); i++) {
             TextView box = new TextView(this);
@@ -468,7 +532,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             lp.setMargins(margin, 0, margin, 0);
             box.setLayoutParams(lp);
             box.setGravity(Gravity.CENTER);
-            box.setTextSize(TypedValue.COMPLEX_UNIT_SP, 22);
+            box.setTextSize(TypedValue.COMPLEX_UNIT_SP, fontSize);
             box.setTypeface(Typeface.DEFAULT_BOLD);
             box.setElevation(dpToPx(2));
 
@@ -524,7 +588,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
 
                 char nextExpected = Character.toUpperCase(currentWord.charAt(currentLetterIndex));
                 txtSpellingHint.setText("Great! Next letter is " + nextExpected);
-                speak(String.valueOf(Character.toUpperCase(expected)));
+                playSoundOrSpeak("letter_" + Character.toLowerCase(expected), String.valueOf(Character.toUpperCase(expected)));
             }
 
         } else {
@@ -549,13 +613,21 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             char keyUpper = Character.toUpperCase(key);
             txtSpellingHint.setText("Try again! Press " + expUpper);
 
-            speak("That's " + keyUpper + ". Try pressing " + expUpper + "!");
+            playSoundOrSpeak("hint_" + Character.toLowerCase(expected), "That's " + keyUpper + ". Try pressing " + expUpper + "!");
         }
     }
 
     private void handleWordCompleted() {
         correctAnswers++;
         wordsCompletedInSession++;
+
+        if (currentLevel == SpellingLevel.LEVEL_1) {
+            level1Completed++;
+        } else if (currentLevel == SpellingLevel.LEVEL_2) {
+            level2Completed++;
+        } else {
+            level3Completed++;
+        }
         savePreferences();
         updateScoreDisplay();
 
@@ -571,15 +643,16 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             cheer.start();
         }
 
-        speak("Awesome job " + childName + "! You spelled " + currentWord + "!");
+        playSoundOrSpeak("cheer_" + currentWord.toLowerCase(), "Awesome job " + childName + "! You spelled " + currentWord + "!");
 
         // Level up check
         if (wordsCompletedInSession >= 6 && currentLevel == SpellingLevel.LEVEL_1) {
             currentLevel = SpellingLevel.LEVEL_2;
             wordsCompletedInSession = 0;
             savePreferences();
+            updateScoreDisplay();
             mainHandler.postDelayed(() -> {
-                speak("You're doing amazing, " + childName + "! Moving to Level 2 with bigger words!");
+                playSoundOrSpeak("level_up_2", "You're doing amazing, " + childName + "! Moving to Level 2 with bigger words!");
                 mainHandler.postDelayed(this::nextSpellingWord, 2000);
             }, 1800);
             return;
@@ -587,8 +660,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             currentLevel = SpellingLevel.LEVEL_3;
             wordsCompletedInSession = 0;
             savePreferences();
+            updateScoreDisplay();
             mainHandler.postDelayed(() -> {
-                speak("SUPERSTAR! You reached Level 3, " + childName + "! Let's spell like a champ!");
+                playSoundOrSpeak("level_up_3", "SUPERSTAR! You reached Level 3, " + childName + "! Let's spell like a champ!");
                 mainHandler.postDelayed(this::nextSpellingWord, 2200);
             }, 1800);
             return;
@@ -604,7 +678,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             spelled.append(currentWord.charAt(i));
             if (i < currentWord.length() - 1) spelled.append(" - ");
         }
-        speak("The word is " + currentWord + ". Spelled: " + spelled + "!");
+        playSoundOrSpeak("word_" + currentWord.toLowerCase(), "The word is " + currentWord + ". Spelled: " + spelled + "!");
     }
 
     // ── Input & Key Processing ────────────────────────────────────────────────
@@ -637,7 +711,6 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
                 handleSpellingKey(key);
                 break;
             case NAME_ENTRY:
-                // Typing directly into name input handled by EditText
                 break;
             case MENU:
                 break;
@@ -651,7 +724,6 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         // External keyboard letters A-Z
         if (keyCode >= KeyEvent.KEYCODE_A && keyCode <= KeyEvent.KEYCODE_Z) {
             char letter = (char) ('a' + (keyCode - KeyEvent.KEYCODE_A));
-            // Visually highlight on-screen keyboard key
             if (onScreenKeyboard != null) {
                 onScreenKeyboard.highlightKey(letter);
             }
@@ -679,19 +751,17 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         return super.onKeyDown(keyCode, event);
     }
 
-    // ── Speech & Talking Mascot ───────────────────────────────────────────────
+    // ── Unified Sound Player & Talking Mascot System ──────────────────────────
 
     private static int utteranceCounter = 0;
 
     private int estimateSyllables(String text) {
         if (text == null || text.trim().isEmpty()) return 1;
         String clean = text.trim();
-        // If single letter or very short single word (e.g. "A", "C", "no", "cat", "dog")
         if (clean.length() <= 3 && !clean.contains(" ")) {
             return 1;
         }
 
-        // Count words
         String[] words = clean.split("\\s+");
         if (words.length == 1) {
             int vowels = 0;
@@ -703,21 +773,23 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             return Math.max(1, vowels);
         }
 
-        // For sentences, estimate ~1.2 syllables per word
         return Math.max(1, (int) Math.round(words.length * 1.2));
     }
 
-    private void speak(String text) {
-        if (text == null || text.trim().isEmpty()) return;
+    /**
+     * Plays local audio file from res/raw if present (e.g. letter_a.mp3, word_cat.mp3),
+     * or seamlessly falls back to TextToSpeech if custom audio is not yet recorded.
+     */
+    private void playSoundOrSpeak(String rawResourceName, String textFallback) {
+        if (textFallback == null || textFallback.trim().isEmpty()) return;
 
-        // 1. Show text in speech bubble pointing to Capybara
+        // 1. Show text in speech bubble
         if (speechBubble != null) {
-            speechBubble.showText(text);
+            speechBubble.showText(textFallback);
         }
 
-        // 2. Determine syllables to match mouth animation precisely
-        int syllables = estimateSyllables(text);
-
+        // 2. Animate mouth matched to syllable count
+        int syllables = estimateSyllables(textFallback);
         if (capsView != null) {
             if (stopTalkingRunnable != null) {
                 mainHandler.removeCallbacks(stopTalkingRunnable);
@@ -725,11 +797,8 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             }
 
             if (syllables <= 2) {
-                // Short utterance (1-2 syllables, e.g. "A", "Cat"):
-                // Mouth opens and closes exact number of times, then rests
                 capsView.startTalking(syllables);
             } else {
-                // Multi-word sentence: natural continuous cadence with safety timeout
                 capsView.startTalkingContinuous();
                 long speechDuration = Math.min(5500L, Math.max(600L, syllables * 230L));
                 stopTalkingRunnable = () -> {
@@ -739,11 +808,41 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             }
         }
 
-        // 3. Audio TTS speech
+        // 3. Try custom audio from res/raw if present
+        int resId = 0;
+        if (rawResourceName != null) {
+            String cleanName = rawResourceName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
+            resId = getResources().getIdentifier(cleanName, "raw", getPackageName());
+        }
+
+        if (resId != 0) {
+            try {
+                if (mediaPlayer != null) {
+                    try { mediaPlayer.stop(); mediaPlayer.release(); } catch (Exception ignored) {}
+                    mediaPlayer = null;
+                }
+                mediaPlayer = MediaPlayer.create(this, resId);
+                if (mediaPlayer != null) {
+                    mediaPlayer.setOnCompletionListener(mp -> {
+                        if (stopTalkingRunnable != null) {
+                            mainHandler.removeCallbacks(stopTalkingRunnable);
+                            stopTalkingRunnable = null;
+                        }
+                        if (capsView != null) capsView.stopTalking();
+                    });
+                    mediaPlayer.start();
+                    return; // Successfully played custom audio asset!
+                }
+            } catch (Exception ignored) {
+                // Fall back to TTS below
+            }
+        }
+
+        // 4. TTS Fallback
         if (tts != null) {
             String uid = "caps_" + (utteranceCounter++);
             Bundle params = new Bundle();
-            tts.speak(text, TextToSpeech.QUEUE_FLUSH, params, uid);
+            tts.speak(textFallback, TextToSpeech.QUEUE_FLUSH, params, uid);
         }
     }
 
@@ -759,6 +858,10 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     protected void onDestroy() {
         if (stopTalkingRunnable != null) {
             mainHandler.removeCallbacks(stopTalkingRunnable);
+        }
+        if (mediaPlayer != null) {
+            try { mediaPlayer.stop(); mediaPlayer.release(); } catch (Exception ignored) {}
+            mediaPlayer = null;
         }
         if (tts != null) {
             tts.stop();

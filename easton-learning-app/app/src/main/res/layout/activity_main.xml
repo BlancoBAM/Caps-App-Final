@@ -43,6 +43,23 @@
             android:clickable="true"
             android:focusable="true" />
 
+        <TextView
+            android:id="@+id/txtLevelBadge"
+            android:layout_width="wrap_content"
+            android:layout_height="28dp"
+            android:layout_marginStart="10dp"
+            android:background="@drawable/level_badge_background"
+            android:gravity="center"
+            android:paddingStart="10dp"
+            android:paddingEnd="10dp"
+            android:text="🎯 Lvl 1 (1-Syl) ▾"
+            android:textColor="#92400E"
+            android:textSize="12sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"
+            android:visibility="gone" />
+
         <View
             android:layout_width="0dp"
             android:layout_height="1dp"
