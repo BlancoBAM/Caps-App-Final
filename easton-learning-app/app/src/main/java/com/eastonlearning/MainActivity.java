@@ -468,7 +468,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         anim.setDuration(240);
         anim.start();
 
-        playSoundOrSpeak("letter_" + Character.toLowerCase(upper), spokenPhrase);
+        playSoundOrSpeak("phonics_" + Character.toLowerCase(upper), spokenPhrase);
     }
 
     // ── 4. Spelling Bee Mode ──────────────────────────────────────────────────
@@ -643,7 +643,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             cheer.start();
         }
 
-        playSoundOrSpeak("cheer_" + currentWord.toLowerCase(), "Awesome job " + childName + "! You spelled " + currentWord + "!");
+        String[] cheerOptions = {"cheer_awesome", "cheer_superstar", "cheer_fantastic", "cheer_brilliant"};
+        String cheerRes = cheerOptions[random.nextInt(cheerOptions.length)];
+        playSoundOrSpeak(cheerRes, "Awesome job " + childName + "! You spelled " + currentWord + "!");
 
         // Level up check
         if (wordsCompletedInSession >= 6 && currentLevel == SpellingLevel.LEVEL_1) {
@@ -678,7 +680,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             spelled.append(currentWord.charAt(i));
             if (i < currentWord.length() - 1) spelled.append(" - ");
         }
-        playSoundOrSpeak("word_" + currentWord.toLowerCase(), "The word is " + currentWord + ". Spelled: " + spelled + "!");
+        playSoundOrSpeak("spell_" + currentWord.toLowerCase(), "The word is " + currentWord + ". Spelled: " + spelled + "!");
     }
 
     // ── Input & Key Processing ────────────────────────────────────────────────
@@ -813,6 +815,12 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         if (rawResourceName != null) {
             String cleanName = rawResourceName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
             resId = getResources().getIdentifier(cleanName, "raw", getPackageName());
+            if (resId == 0 && cleanName.startsWith("phonics_")) {
+                resId = getResources().getIdentifier("letter_" + cleanName.substring(8), "raw", getPackageName());
+            }
+            if (resId == 0 && cleanName.startsWith("spell_")) {
+                resId = getResources().getIdentifier("word_" + cleanName.substring(6), "raw", getPackageName());
+            }
         }
 
         if (resId != 0) {

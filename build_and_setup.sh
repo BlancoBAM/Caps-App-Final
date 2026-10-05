@@ -17,14 +17,14 @@ if [ ! -d "$ANDROID_HOME/cmdline-tools/latest" ]; then
 fi
 
 export ANDROID_HOME="$ANDROID_HOME"
-export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/33.0.2"
+export PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools/34.0.0"
 export JAVA_HOME="/usr/lib/jvm/java-17-openjdk-amd64"
 
 echo "=== Accepting SDK licenses ==="
 yes | sdkmanager --licenses > /dev/null 2>&1 || true
 
 echo "=== Installing SDK platform and build tools ==="
-sdkmanager "platforms;android-33" "build-tools;33.0.2" "platform-tools"
+sdkmanager "platforms;android-33" "build-tools;34.0.0" "platform-tools"
 
 echo "=== Building APK ==="
 cd "$HOME/Caps-App-Final/easton-learning-app"
