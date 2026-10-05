@@ -3,17 +3,24 @@ package com.eastonlearning;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.media.AudioAttributes;
+import android.media.AudioDeviceInfo;
+import android.media.AudioFocusRequest;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.speech.tts.TextToSpeech;
-import android.speech.tts.UtteranceProgressListener;
+import android.os.VibrationEffect;
+import android.os.Vibrator;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -25,20 +32,39 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 
-public class MainActivity extends Activity implements TextToSpeech.OnInitListener {
+public class MainActivity extends Activity {
 
-    private TextToSpeech tts;
     private MediaPlayer mediaPlayer;
     private SharedPreferences prefs;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private Runnable stopTalkingRunnable;
+
+    // Audio focus & haptics
+    private AudioManager audioManager;
+    private AudioFocusRequest audioFocusRequest;
+    private Vibrator vibrator;
+
+    // Headphone state
+    private boolean headphonesWarningShown = false;
+    private final BroadcastReceiver headsetReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            int state = intent.getIntExtra("state", -1);
+            if (state == 0) {
+                // Headphones unplugged — remind Easton
+                mainHandler.post(() ->
+                    playSoundOrSpeak("headphone_reminder",
+                        "Heads up! I can hear that your headphones were disconnected. Make sure you can still hear me!"));
+            }
+        }
+    };
 
     // Child name (persisted in SharedPreferences)
     private String childName = "Friend";
@@ -63,6 +89,8 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     // Spelling state
     private String currentWord = "";
     private int currentLetterIndex = 0;
+    private int wordMistakes = 0;
+    private String kittenApiKey = "";
     private final List<TextView> letterBoxViews = new ArrayList<>();
     private final Random random = new Random();
 
@@ -88,6 +116,12 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private LinearLayout letterBoxesContainer;
     private TextView txtSpellingHint;
     private Button btnRepeatWord;
+    private Button btnSkipWord;
+    private Button btnHintWord;
+
+    // Hint state
+    private int hintStep = 0;
+    private Runnable hintRunnable = null;
 
     // ── Word Dictionaries (Expanded: 1-Letter to 3-Syllable Words) ───────────
 
@@ -163,10 +197,11 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         setContentView(R.layout.activity_main);
 
         initializePreferences();
+        initializeServices();
         initializeViews();
-        initializeTTS();
+        setVolumeControlStream(AudioManager.STREAM_MUSIC);
 
-        // Immediately set the UI state on launch without waiting for TTS
+        // Immediately set the UI state on launch
         if (isFirstLaunch || TextUtils.isEmpty(childName) || "Friend".equals(childName)) {
             showNameEntry();
         } else {
@@ -174,10 +209,23 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         }
     }
 
+    private void initializeServices() {
+        audioManager = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        vibrator = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
+
+        // Register receiver for headphone connection/disconnection
+        try {
+            IntentFilter filter = new IntentFilter();
+            filter.addAction(Intent.ACTION_HEADSET_PLUG);
+            registerReceiver(headsetReceiver, filter);
+        } catch (Exception ignored) {}
+    }
+
     private void initializePreferences() {
         prefs = getSharedPreferences("EastonLearning", MODE_PRIVATE);
         isFirstLaunch = prefs.getBoolean("isFirstLaunch", true);
         childName = prefs.getString("childName", "");
+        kittenApiKey = prefs.getString("kittenml_api_key", "");
         correctAnswers = prefs.getInt("correctAnswers", 0);
         missedAnswers = prefs.getInt("missedAnswers", 0);
         level1Completed = prefs.getInt("level1Completed", 0);
@@ -237,6 +285,8 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         letterBoxesContainer = findViewById(R.id.letterBoxesContainer);
         txtSpellingHint = findViewById(R.id.txtSpellingHint);
         btnRepeatWord = findViewById(R.id.btnRepeatWord);
+        btnSkipWord = findViewById(R.id.btnSkipWord);
+        btnHintWord = findViewById(R.id.btnHintWord);
 
         // Click Listeners
         btnMenu.setOnClickListener(v -> showMainMenu());
@@ -245,6 +295,8 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         btnLearnByListening.setOnClickListener(v -> startLearnByListening());
         btnSpellingBee.setOnClickListener(v -> startSpellingBee());
         btnRepeatWord.setOnClickListener(v -> repeatCurrentWord());
+        btnSkipWord.setOnClickListener(v -> skipCurrentWord());
+        btnHintWord.setOnClickListener(v -> showHint());
 
         nameSubmitButton.setOnClickListener(v -> submitName());
         nameInput.setOnEditorActionListener((v, actionId, event) -> {
@@ -289,55 +341,6 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         }
     }
 
-    private void initializeTTS() {
-        tts = new TextToSpeech(this, this);
-        setVolumeControlStream(AudioManager.STREAM_MUSIC);
-    }
-
-    @Override
-    public void onInit(int status) {
-        if (status == TextToSpeech.SUCCESS) {
-            tts.setLanguage(Locale.US);
-            tts.setPitch(1.3f);
-            tts.setSpeechRate(0.85f);
-
-            tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
-                @Override
-                public void onStart(String utteranceId) {
-                    // Mouth is already initiated cleanly with syllables or continuous
-                }
-
-                @Override
-                public void onDone(String utteranceId) {
-                    runOnUiThread(() -> {
-                        if (stopTalkingRunnable != null) {
-                            mainHandler.removeCallbacks(stopTalkingRunnable);
-                            stopTalkingRunnable = null;
-                        }
-                        if (capsView != null) capsView.stopTalking();
-                    });
-                }
-
-                @Override
-                public void onError(String utteranceId) {
-                    runOnUiThread(() -> {
-                        if (stopTalkingRunnable != null) {
-                            mainHandler.removeCallbacks(stopTalkingRunnable);
-                            stopTalkingRunnable = null;
-                        }
-                        if (capsView != null) capsView.stopTalking();
-                    });
-                }
-            });
-
-            // Initial audio welcome based on current mode
-            if (currentMode == GameMode.NAME_ENTRY) {
-                playSoundOrSpeak("welcome_first", "Hi there! I'm Caps the Capybara! What's your name?");
-            } else if (currentMode == GameMode.MENU) {
-                playSoundOrSpeak("welcome_back", "Hi " + childName + "! Choose how you'd like to learn today!");
-            }
-        }
-    }
 
     private void updatePlayerHeader() {
         if (TextUtils.isEmpty(childName) || "Friend".equals(childName)) {
@@ -460,6 +463,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         txtBigLetter.setText(String.valueOf(upper));
         txtPhonics.setText(upper + " is for " + wordWithEmoji);
 
+        // Haptic feedback for tactile satisfaction (Suggestion 6)
+        triggerHaptic(true);
+
         // Animate the letter display card
         AnimatorSet anim = new AnimatorSet();
         ObjectAnimator sX = ObjectAnimator.ofFloat(txtBigLetter, "scaleX", 1f, 1.35f, 1f);
@@ -488,16 +494,15 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     }
 
     private void nextSpellingWord() {
+        cancelHint();
+        wordMistakes = 0;
         currentWord = pickWordForLevel();
         currentLetterIndex = 0;
 
         buildLetterBoxes(currentWord);
 
-        String firstLetter = String.valueOf(currentWord.charAt(0)).toUpperCase();
         txtSpellingHint.setText("Spell: " + currentWord.toUpperCase());
-
-        String prompt = "Can you spell " + currentWord + ", " + childName + "? The first letter is " + firstLetter + "!";
-        playSoundOrSpeak("word_" + currentWord.toLowerCase(), prompt);
+        playWordIntroSequence(currentWord);
     }
 
     private String pickWordForLevel() {
@@ -561,7 +566,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         TextView currentBox = letterBoxViews.get(currentLetterIndex);
 
         if (isMatch) {
-            // Correct letter!
+            // Correct letter! (Suggestion 6: positive double-tap haptic)
+            triggerHaptic(true);
+
             currentBox.setText(String.valueOf(Character.toUpperCase(expected)));
             currentBox.setTextColor(Color.WHITE);
             currentBox.setBackgroundResource(R.drawable.letter_box_correct);
@@ -592,7 +599,10 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             }
 
         } else {
-            // Incorrect letter
+            // Incorrect letter — gentle buzz
+            triggerHaptic(false);
+
+            wordMistakes++;
             missedAnswers++;
             savePreferences();
             updateScoreDisplay();
@@ -610,10 +620,16 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
             }, 300);
 
             char expUpper = Character.toUpperCase(expected);
-            char keyUpper = Character.toUpperCase(key);
-            txtSpellingHint.setText("Try again! Press " + expUpper);
+            txtSpellingHint.setText("Try the letter " + expUpper + "!");
 
-            playSoundOrSpeak("hint_" + Character.toLowerCase(expected), "That's " + keyUpper + ". Try pressing " + expUpper + "!");
+            // If child has missed multiple times on this word, speak soothing phrase;
+            // otherwise speak the letter entered on keyboard.
+            if (wordMistakes >= 3) {
+                wordMistakes = 0;
+                playSoundOrSpeak("soothing_misspelled", "That's okay! Take your time and try again!");
+            } else {
+                playSoundOrSpeak("letter_" + Character.toLowerCase(key), String.valueOf(Character.toUpperCase(key)));
+            }
         }
     }
 
@@ -673,14 +689,134 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         mainHandler.postDelayed(this::nextSpellingWord, 1800);
     }
 
+    // ── Suggestion 11: Word Intro Audio Sequencing ───────────────────────────
+
     private void repeatCurrentWord() {
         if (currentWord.isEmpty()) return;
+        playWordIntroSequence(currentWord);
+    }
+
+    /**
+     * Plays the word sound (e.g. word_cat.mp3) followed by a short pause,
+     * then spells it letter by letter with letter_X.mp3 for each,
+     * ensuring the entire introduction uses only Caps' custom voice.
+     */
+    private void playWordIntroSequence(String word) {
+        if (word == null || word.isEmpty()) return;
+
+        // Visual presentation in bubble
         StringBuilder spelled = new StringBuilder();
-        for (int i = 0; i < currentWord.length(); i++) {
-            spelled.append(currentWord.charAt(i));
-            if (i < currentWord.length() - 1) spelled.append(" - ");
+        for (int i = 0; i < word.length(); i++) {
+            spelled.append(Character.toUpperCase(word.charAt(i)));
+            if (i < word.length() - 1) spelled.append(" - ");
         }
-        playSoundOrSpeak("spell_" + currentWord.toLowerCase(), "The word is " + currentWord + ". Spelled: " + spelled + "!");
+        String prompt = "The word is " + word.toUpperCase() + "! " + spelled + ". Can you spell " + word.toUpperCase() + ", " + childName + "?";
+        if (speechBubble != null) {
+            speechBubble.showText(prompt);
+        }
+
+        // Animate Caps mouth for the introduction
+        if (capsView != null) {
+            capsView.startTalkingContinuous();
+        }
+
+        // Step 1: Play word audio (word_<word>.mp3)
+        playRawAudio("word_" + word.toLowerCase(), () -> {
+            // Step 2: Spell out each letter sequentially with letter_X.mp3
+            mainHandler.postDelayed(() -> spellWordSequentially(word, 0), 400);
+        });
+    }
+
+    private void spellWordSequentially(String word, int index) {
+        if (index >= word.length()) {
+            if (stopTalkingRunnable != null) {
+                mainHandler.removeCallbacks(stopTalkingRunnable);
+                stopTalkingRunnable = null;
+            }
+            if (capsView != null) capsView.stopTalking();
+            abandonAppAudioFocus();
+            return;
+        }
+
+        char c = word.charAt(index);
+        playRawAudio("letter_" + Character.toLowerCase(c), () -> {
+            mainHandler.postDelayed(() -> spellWordSequentially(word, index + 1), 350);
+        });
+    }
+
+    private void playRawAudio(String rawName, Runnable onFinished) {
+        requestAppAudioFocus();
+        int resId = 0;
+        if (rawName != null) {
+            String clean = rawName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
+            resId = getResources().getIdentifier(clean, "raw", getPackageName());
+        }
+
+        if (resId != 0) {
+            try {
+                if (mediaPlayer != null) {
+                    try { mediaPlayer.stop(); mediaPlayer.release(); } catch (Exception ignored) {}
+                    mediaPlayer = null;
+                }
+                mediaPlayer = MediaPlayer.create(this, resId);
+                if (mediaPlayer != null) {
+                    mediaPlayer.setOnCompletionListener(mp -> {
+                        if (onFinished != null) onFinished.run();
+                    });
+                    mediaPlayer.start();
+                    return;
+                }
+            } catch (Exception ignored) {}
+        }
+
+        // If audio file doesn't exist, advance after brief pause
+        if (onFinished != null) {
+            mainHandler.postDelayed(onFinished, 400);
+        }
+    }
+
+    private void skipCurrentWord() {
+        if (currentWord.isEmpty()) return;
+        cancelHint();
+        txtSpellingHint.setText("No worries! Let's try another word!");
+        playSoundOrSpeak("hint_general_retry", "No worries! Let's try another word!");
+        mainHandler.postDelayed(this::nextSpellingWord, 1400);
+    }
+
+    /**
+     * Hint: highlights each correct letter on the on-screen keyboard one by one,
+     * at a pace kids can follow, so they can see exactly which keys to press.
+     */
+    private void showHint() {
+        if (currentWord.isEmpty()) return;
+        cancelHint();
+        hintStep = currentLetterIndex; // start from the first un-typed letter
+        txtSpellingHint.setText("Here's a hint! Watch the keys light up!");
+        playSoundOrSpeak("hint_general_retry", "Here's a hint! Watch the keys!");
+        scheduleHintStep();
+    }
+
+    private void scheduleHintStep() {
+        if (hintStep >= currentWord.length()) return;
+        hintRunnable = () -> {
+            if (onScreenKeyboard != null && hintStep < currentWord.length()) {
+                char hintLetter = currentWord.charAt(hintStep);
+                onScreenKeyboard.highlightHintKey(hintLetter);
+                hintStep++;
+                if (hintStep < currentWord.length()) {
+                    scheduleHintStep();
+                }
+            }
+        };
+        mainHandler.postDelayed(hintRunnable, 800);
+    }
+
+    private void cancelHint() {
+        if (hintRunnable != null) {
+            mainHandler.removeCallbacks(hintRunnable);
+            hintRunnable = null;
+        }
+        hintStep = 0;
     }
 
     // ── Input & Key Processing ────────────────────────────────────────────────
@@ -785,6 +921,9 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
     private void playSoundOrSpeak(String rawResourceName, String textFallback) {
         if (textFallback == null || textFallback.trim().isEmpty()) return;
 
+        // Request audio focus so app audio ducks background sounds
+        requestAppAudioFocus();
+
         // 1. Show text in speech bubble
         if (speechBubble != null) {
             speechBubble.showText(textFallback);
@@ -832,6 +971,7 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
                 mediaPlayer = MediaPlayer.create(this, resId);
                 if (mediaPlayer != null) {
                     mediaPlayer.setOnCompletionListener(mp -> {
+                        abandonAppAudioFocus();
                         if (stopTalkingRunnable != null) {
                             mainHandler.removeCallbacks(stopTalkingRunnable);
                             stopTalkingRunnable = null;
@@ -841,16 +981,56 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
                     mediaPlayer.start();
                     return; // Successfully played custom audio asset!
                 }
-            } catch (Exception ignored) {
-                // Fall back to TTS below
-            }
+            } catch (Exception ignored) {}
         }
 
-        // 4. TTS Fallback
-        if (tts != null) {
-            String uid = "caps_" + (utteranceCounter++);
-            Bundle params = new Bundle();
-            tts.speak(textFallback, TextToSpeech.QUEUE_FLUSH, params, uid);
+        // 4. Try local KittenTTS cached file
+        File cachedSpeech = KittenTTSClient.getCachedAudioFile(this, textFallback);
+        if (cachedSpeech.exists() && cachedSpeech.length() > 0) {
+            playAudioFile(cachedSpeech);
+            return;
+        }
+
+        // 5. Try dynamic KittenTTS API synthesis if API key is provided
+        if (!TextUtils.isEmpty(kittenApiKey) && KittenTTSClient.isNetworkAvailable(this)) {
+            KittenTTSClient.synthesizeSpeech(this, kittenApiKey, textFallback, new KittenTTSClient.SpeechCallback() {
+                @Override
+                public void onSuccess(File audioFile) {
+                    playAudioFile(audioFile);
+                }
+
+                @Override
+                public void onFailure(Exception error) {
+                    abandonAppAudioFocus();
+                }
+            });
+            return;
+        }
+
+        // Graceful silent completion for speech bubble without any robotic TTS
+        mainHandler.postDelayed(this::abandonAppAudioFocus, 1200);
+    }
+
+    private void playAudioFile(File file) {
+        try {
+            if (mediaPlayer != null) {
+                try { mediaPlayer.stop(); mediaPlayer.release(); } catch (Exception ignored) {}
+                mediaPlayer = null;
+            }
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.setDataSource(file.getAbsolutePath());
+            mediaPlayer.prepare();
+            mediaPlayer.setOnCompletionListener(mp -> {
+                abandonAppAudioFocus();
+                if (stopTalkingRunnable != null) {
+                    mainHandler.removeCallbacks(stopTalkingRunnable);
+                    stopTalkingRunnable = null;
+                }
+                if (capsView != null) capsView.stopTalking();
+            });
+            mediaPlayer.start();
+        } catch (Exception e) {
+            abandonAppAudioFocus();
         }
     }
 
@@ -862,18 +1042,107 @@ public class MainActivity extends Activity implements TextToSpeech.OnInitListene
         );
     }
 
+    // ── Suggestion 2: Audio Focus Management ─────────────────────────────────
+
+    private void requestAppAudioFocus() {
+        if (audioManager == null) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (audioFocusRequest == null) {
+                    AudioAttributes playbackAttributes = new AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ASSISTANCE_ACCESSIBILITY)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+                            .build();
+                    audioFocusRequest = new AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK)
+                            .setAudioAttributes(playbackAttributes)
+                            .setAcceptsDelayedFocusGain(true)
+                            .setOnAudioFocusChangeListener(focusChange -> {
+                                // Handled automatically by system ducking
+                            })
+                            .build();
+                }
+                audioManager.requestAudioFocus(audioFocusRequest);
+            } else {
+                audioManager.requestAudioFocus(null, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    private void abandonAppAudioFocus() {
+        if (audioManager == null) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && audioFocusRequest != null) {
+                audioManager.abandonAudioFocusRequest(audioFocusRequest);
+            } else {
+                audioManager.abandonAudioFocus(null);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    // ── Suggestion 6: Tactile / Haptic Feedback ───────────────────────────────
+
+    private void triggerHaptic(boolean correct) {
+        if (vibrator == null || !vibrator.hasVibrator()) return;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (correct) {
+                    // Quick, crisp double-tap pulse
+                    long[] timings = {0, 25, 45, 25};
+                    int[] amplitudes = {0, 180, 0, 230};
+                    vibrator.vibrate(VibrationEffect.createWaveform(timings, amplitudes, -1));
+                } else {
+                    // Gentle, friendly buzz for mistake
+                    vibrator.vibrate(VibrationEffect.createOneShot(110, 120));
+                }
+            } else {
+                if (correct) {
+                    vibrator.vibrate(new long[]{0, 25, 45, 25}, -1);
+                } else {
+                    vibrator.vibrate(110);
+                }
+            }
+        } catch (Exception ignored) {}
+    }
+
+    // ── Suggestion 7: Headphone Detection ─────────────────────────────────────
+
+    private boolean areHeadphonesConnected() {
+        if (audioManager == null) return false;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                AudioDeviceInfo[] devices = audioManager.getDevices(AudioManager.GET_DEVICES_OUTPUTS);
+                for (AudioDeviceInfo device : devices) {
+                    int type = device.getType();
+                    if (type == AudioDeviceInfo.TYPE_WIRED_HEADSET ||
+                        type == AudioDeviceInfo.TYPE_WIRED_HEADPHONES ||
+                        type == AudioDeviceInfo.TYPE_BLUETOOTH_A2DP ||
+                        type == AudioDeviceInfo.TYPE_BLUETOOTH_SCO ||
+                        type == AudioDeviceInfo.TYPE_USB_HEADSET) {
+                        return true;
+                    }
+                }
+                return false;
+            } else {
+                return audioManager.isWiredHeadsetOn() || audioManager.isBluetoothA2dpOn();
+            }
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
     @Override
     protected void onDestroy() {
+        try {
+            unregisterReceiver(headsetReceiver);
+        } catch (Exception ignored) {}
+        abandonAppAudioFocus();
+
         if (stopTalkingRunnable != null) {
             mainHandler.removeCallbacks(stopTalkingRunnable);
         }
         if (mediaPlayer != null) {
             try { mediaPlayer.stop(); mediaPlayer.release(); } catch (Exception ignored) {}
             mediaPlayer = null;
-        }
-        if (tts != null) {
-            tts.stop();
-            tts.shutdown();
         }
         super.onDestroy();
     }

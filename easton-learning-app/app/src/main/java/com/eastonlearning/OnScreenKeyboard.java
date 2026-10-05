@@ -195,6 +195,33 @@ public class OnScreenKeyboard extends LinearLayout {
         }, 180);
     }
 
+    /**
+     * Hint highlight: glows gold for 600ms so kids have time to see and locate the key.
+     */
+    public void highlightHintKey(char key) {
+        char upper = Character.toUpperCase(key);
+        final TextView keyView = keyViews.get(upper);
+        if (keyView == null) return;
+
+        final Integer baseColor = defaultColors.get(upper);
+        int normalColor = baseColor != null ? baseColor : 0xFF3B82F6;
+
+        keyView.setBackground(makeKeyDrawable(0xFFFACC15, true));
+        keyView.setTextColor(0xFF78350F);
+
+        AnimatorSet set = new AnimatorSet();
+        ObjectAnimator scaleX = ObjectAnimator.ofFloat(keyView, "scaleX", 1f, 1.35f, 1.35f, 1f);
+        ObjectAnimator scaleY = ObjectAnimator.ofFloat(keyView, "scaleY", 1f, 1.35f, 1.35f, 1f);
+        set.playTogether(scaleX, scaleY);
+        set.setDuration(600);
+        set.start();
+
+        keyView.postDelayed(() -> {
+            keyView.setBackground(makeKeyDrawable(normalColor, false));
+            keyView.setTextColor(Color.WHITE);
+        }, 620);
+    }
+
     private void animateTouchPress(View keyView) {
         AnimatorSet set = new AnimatorSet();
         ObjectAnimator scaleX = ObjectAnimator.ofFloat(keyView, "scaleX", 1f, 0.88f, 1f);
