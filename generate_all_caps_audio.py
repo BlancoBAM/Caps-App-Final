@@ -94,26 +94,26 @@ def parse_scripts():
 
     return tasks
 
-# Reference slices from user audio for A through I
+# Exact slices from user authentic recording Untitled.mp3
 REF_SLICES = {
-    'letter_a.mp3': (0.00, 1.50),
-    'phonics_a.mp3': (1.50, 4.25),
-    'letter_b.mp3': (4.25, 5.05),
-    'phonics_b.mp3': (5.05, 8.65),
-    'letter_c.mp3': (8.65, 9.30),
-    'phonics_c.mp3': (9.30, 11.45),
-    'letter_d.mp3': (11.45, 12.10),
-    'phonics_d.mp3': (12.10, 15.30),
-    'letter_e.mp3': (15.30, 16.35),
-    'phonics_e.mp3': (16.35, 18.60),
-    'letter_f.mp3': (18.60, 19.25),
-    'phonics_f.mp3': (19.25, 23.00),
-    'letter_g.mp3': (23.00, 24.40),
-    'phonics_g.mp3': (24.40, 27.40),
-    'letter_h.mp3': (27.40, 28.60),
-    'phonics_h.mp3': (28.60, 31.80),
-    'letter_i.mp3': (31.80, 33.10),
-    'phonics_i.mp3': (33.10, 36.05),
+    'letter_a.mp3': (0.00, 0.95),
+    'phonics_a.mp3': (1.60, 4.45),
+    'letter_b.mp3': (4.48, 5.12),
+    'phonics_b.mp3': (5.14, 8.56),
+    'letter_c.mp3': (8.60, 9.22),
+    'phonics_c.mp3': (9.32, 11.56),
+    'letter_d.mp3': (11.56, 12.18),
+    'phonics_d.mp3': (12.20, 15.22),
+    'letter_e.mp3': (15.22, 15.60),
+    'phonics_e.mp3': (15.60, 18.70),
+    'letter_f.mp3': (18.70, 19.25),
+    'phonics_f.mp3': (19.28, 23.16),
+    'letter_g.mp3': (23.16, 24.10),
+    'phonics_g.mp3': (24.46, 27.45),
+    'letter_h.mp3': (27.50, 28.12),
+    'phonics_h.mp3': (28.64, 31.92),
+    'letter_i.mp3': (31.94, 32.65),
+    'phonics_i.mp3': (33.04, 36.02),
 }
 
 def main():
@@ -138,8 +138,8 @@ def main():
     # 3. Load KittenTTS model
     print("Loading KittenTTS (KittenML/kitten-tts-nano-0.8)...")
     tts = KittenTTS('KittenML/kitten-tts-nano-0.8')
-    VOICE = 'Rosie'  # Matches pitch & timbre of reference audio (~240 Hz F0)
-    SPEED = 1.10
+    VOICE = 'Luna'  # Exactly matches pitch (~260 Hz F0) and warm animated timbre of reference recording
+    SPEED = 1.05
     print(f"TTS Voice: '{VOICE}' at speed {SPEED}")
 
     start_time = time.time()

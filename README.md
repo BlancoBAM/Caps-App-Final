@@ -34,10 +34,22 @@ An engaging, kid-friendly Android educational app featuring **Caps the Capybara*
 - **Master Voice Script**: See [`CAPS_VOICE_SCRIPTS.md`](file:///home/s8n/Caps-App-Final/CAPS_VOICE_SCRIPTS.md) for the complete list of all 160+ vocabulary words, letter sounds, celebration lines, and mistake support scripts ready for voice generation (ElevenLabs, OpenAI TTS, or custom recording).
 
 ### 🦫 Animated Mascot — Caps the Capybara
-- **Syllable-Accurate Speech**: Caps's mouth opens and closes in exact sync with word syllables (single-syllable words open and close once smoothly; multi-word sentences animate at conversational cadence).
-- **Angled Presentation**: Positioned on the left and angled 3/4 right toward the speech bubble and board.
-- **Speech Bubble Connection**: Dynamic speech bubble with a left-facing pointer tail connecting directly to Caps's mouth.
-- **Lifelike Character**: Organic eye blinks every ~3.5 seconds, gentle breathing idle cycle, and signature yuzu/orange fruit on its head.
+- **5-State Behavioral Animation System**:
+  - `IDLE`: Organic gentle breathing, lateral weight sway, relaxed clasped hands, and natural eye blinks every ~3.5 seconds (`loop: true`).
+  - `SPEAKING`: Expressive hand gestures, active syllable sync, and dynamic viseme cycling (`interruptible: true`).
+  - `PRAISE / SUCCESS`: Clapping/rubbing hands gesture (inspired by sample 3D animation clip), enthusiastic body bounces, and joyful wide smile (`loop: false`, automatic return to `IDLE`).
+  - `QUESTION / HINT`: Inquisitive head tilt, raised eyebrow, and one hand up/pointing gesture (`loop: false`, automatic return to `IDLE`).
+  - `GENTLE_GUIDANCE`: Reassuring open palms, comforting slight tilt, and sympathetic smile when children make mistakes or need encouragement (`loop: false`, automatic return to `IDLE`).
+- **6-Viseme Phoneme Synchronization**:
+  1. `REST`: Neutral closed lips (M, B, P sounds)
+  2. `WIDE_OPEN`: Low jaw drop for broad vowels (Ah, A, O)
+  3. `ROUND_PUCKERED`: Tight rounded lips (Oh/Oo, U, W)
+  4. `WIDE_SMILE`: Stretched smiling lips (Ee, E, I, S, Z)
+  5. `TEETH_ON_LIP`: Upper teeth contacting lower lip (F, V)
+  6. `TONGUE_ALVEOLAR`: Tongue tip raised towards upper palate (L, T, D, N)
+- **Front-Facing Character Styling**: Matches the 3D animation reference with rounded torso, light tummy patch, prominent snout, dark hands/feet, and signature orange yuzu fruit.
+- **Speech Bubble Connection**: Dynamic speech bubble with left pointer tail connecting directly to Caps's mouth.
+- **3D Pipeline & Assets**: Includes [`caps_animation_controller.json`](file:///home/s8n/Caps-App-Final/easton-learning-app/app/src/main/assets/caps_animation_controller.json) and Blender export script [`export_caps_animations.py`](file:///home/s8n/Caps-App-Final/export_caps_animations.py).
 
 ### ⌨️ Dual Keyboard Input
 - **On-Screen Touch Keyboard**: Vibrantly colored, 3-row QWERTY keyboard with tactile touch-press animation.
@@ -49,6 +61,19 @@ An engaging, kid-friendly Android educational app featuring **Caps the Capybara*
 - **Personalized Addressing**: Caps addresses the child by name throughout speech bubbles, voice greetings, and praise.
 - **One-Tap Profile Editing**: Tapping the top-bar player badge (`👤 [Name] ✏️`) allows switching or updating the player name anytime.
 - **Data Persistence**: Child name, current level, level completion counters, correct answers, and missed attempts are safely saved across sessions via `SharedPreferences`.
+
+### 🔒 Parent & Educator Settings (Protected by Parental Gate)
+- **Math Verification Gate**: To comply with Google Play Families and COPPA regulations, accessing settings requires solving a dynamic math challenge that toddlers cannot bypass.
+- **Sound & Quiet Mode**: Instant toggle to mute all audio while keeping speech bubbles and cartoon mascot gestures active for quiet environments (car rides, libraries, bedtime).
+- **Learning Stats Reset**: Grown-ups can reset stars and completion counts whenever starting fresh with a new student.
+- **Optional Cloud TTS Integration**: Field for optional KittenML API key for dynamic sentence synthesis, while all 120 words and 26 letters play built-in studio audio without requiring an internet connection.
+
+### 🛡️ Store Compliance & High-Performance Engineering
+- **Target SDK 34 (Android 14)**: Meets current Google Play & Amazon Appstore release requirements with backward compatibility to API 22+.
+- **Zero Dangerous Permissions**: Removed all microphone/audio recording permissions to guarantee COPPA safety and zero data collection.
+- **Immersive Sticky Fullscreen**: Keeps system navigation bars hidden so children cannot accidentally exit the app during gameplay.
+- **Zero-Allocation Canvas Pipeline**: Mascot and speech bubble custom views pre-allocate all `Paint`, `Path`, and `RectF` structures, preventing GC stutter and frame drops.
+- **Managed Lifecycle**: Automatically pauses animation loops and releases audio focus when the app is placed in the background.
 
 ---
 

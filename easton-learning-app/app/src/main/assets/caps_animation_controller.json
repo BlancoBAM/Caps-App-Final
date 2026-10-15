@@ -1,0 +1,81 @@
+{
+  "Character": "Caps",
+  "DefaultState": "caps_idle",
+  "States": {
+    "IDLE": {
+      "clip": "caps_idle.anim",
+      "loop": true,
+      "bodyGesture": "Gentle breathing, subtle weight shift",
+      "facialExpression": "Soft smile, occasional blink",
+      "hands": "Loosely clasped paws at center"
+    },
+    "SPEAKING": {
+      "clip": "caps_talk_neutral.anim",
+      "blendTree": "viseme_blend_tree",
+      "loop": true,
+      "interruptible": true,
+      "bodyGesture": "Expressive hand talking gestures, gentle arm sway",
+      "facialExpression": "Synchronized mouth visemes (open/closed vowels)",
+      "hands": "Open gesturing palms"
+    },
+    "SUCCESS": {
+      "clip": "caps_praise.anim",
+      "loop": false,
+      "returnTo": "IDLE",
+      "returnDelayMs": 2800,
+      "bodyGesture": "Clapping / rubbing hands (from sample animation clip), joyful body bounce",
+      "facialExpression": "Wide joyful smile, dimples, raised eyebrows",
+      "hands": "Rapid clapping / palm rubbing oscillation"
+    },
+    "HINT": {
+      "clip": "caps_question.anim",
+      "loop": false,
+      "returnTo": "IDLE",
+      "returnDelayMs": 4000,
+      "bodyGesture": "One hand raised / index point, inquisitive head tilt",
+      "facialExpression": "Eyebrows raised high, curious expression",
+      "hands": "Right hand up pointing, left hand resting"
+    },
+    "GENTLE_GUIDANCE": {
+      "clip": "caps_gentle_guidance.anim",
+      "loop": false,
+      "returnTo": "IDLE",
+      "returnDelayMs": 3200,
+      "bodyGesture": "Reassuring open palms, slight comforting tilt",
+      "facialExpression": "Sympathetic encouraging smile, gentle furrowed brow",
+      "hands": "Open palms extended forward"
+    }
+  },
+  "Visemes": {
+    "REST": {
+      "description": "Neutral closed lips",
+      "phonemes": ["M", "B", "P"],
+      "blendShape": "mouth_rest_closed"
+    },
+    "WIDE_OPEN": {
+      "description": "Low jaw drop for broad vowels (Ah)",
+      "phonemes": ["A", "O", "AA"],
+      "blendShape": "mouth_wide_open_ah"
+    },
+    "ROUND_PUCKERED": {
+      "description": "Tight rounded lips (Oh/Oo)",
+      "phonemes": ["U", "W", "OO"],
+      "blendShape": "mouth_round_puckered_oh"
+    },
+    "WIDE_SMILE": {
+      "description": "Stretched smile lips (Ee)",
+      "phonemes": ["E", "I", "S", "Z", "C", "K", "G", "Y"],
+      "blendShape": "mouth_wide_smile_ee"
+    },
+    "TEETH_ON_LIP": {
+      "description": "Upper teeth touching lower lip",
+      "phonemes": ["F", "V"],
+      "blendShape": "mouth_teeth_on_lip_fv"
+    },
+    "TONGUE_ALVEOLAR": {
+      "description": "Tongue tip hitting behind upper teeth",
+      "phonemes": ["L", "T", "D", "N", "R", "J"],
+      "blendShape": "mouth_tongue_alveolar_ltd"
+    }
+  }
+}

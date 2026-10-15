@@ -24,7 +24,7 @@ echo "=== Accepting SDK licenses ==="
 yes | sdkmanager --licenses > /dev/null 2>&1 || true
 
 echo "=== Installing SDK platform and build tools ==="
-sdkmanager "platforms;android-33" "build-tools;34.0.0" "platform-tools"
+sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
 
 echo "=== Building APK ==="
 cd "$HOME/Caps-App-Final/easton-learning-app"

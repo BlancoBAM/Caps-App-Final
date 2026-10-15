@@ -2,15 +2,17 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.eastonlearning">
 
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Removed unused RECORD_AUDIO permission to comply with Google Play Families / COPPA requirements -->
     <uses-permission android:name="android.permission.VIBRATE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     
     <application
         android:allowBackup="true"
-        android:icon="@drawable/caps_capybara"
-        android:label="Learn By Listening"
+        android:hardwareAccelerated="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:label="Caps Learning"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
         
         <activity
