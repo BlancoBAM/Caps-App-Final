@@ -3,6 +3,7 @@ package com.eastonlearning;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -21,17 +22,23 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.VibrationEffect;
 import android.os.Vibrator;
+import android.text.InputType;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.WindowInsets;
+import android.view.WindowInsetsController;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
+import android.widget.Toast;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -95,11 +102,12 @@ public class MainActivity extends Activity {
     private final Random random = new Random();
 
     // UI Elements
-    private TextView txtPlayer, txtStats, txtLevelBadge;
+    private TextView txtPlayer, txtStats, txtLevelBadge, btnSettings;
     private Button btnMenu;
     private CapybaraView capsView;
     private SpeechBubbleView speechBubble;
     private OnScreenKeyboard onScreenKeyboard;
+    private boolean soundMuted = false;
 
     // Content Panels
     private LinearLayout nameEntryPanel;
@@ -196,6 +204,7 @@ public class MainActivity extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        hideSystemUI();
         initializePreferences();
         initializeServices();
         initializeViews();
@@ -219,6 +228,9 @@ public class MainActivity extends Activity {
             filter.addAction(Intent.ACTION_HEADSET_PLUG);
             registerReceiver(headsetReceiver, filter);
         } catch (Exception ignored) {}
+
+        // Initialize on-device KittenTTS neural speech engine
+        KittenTTSClient.init(this);
     }
 
     private void initializePreferences() {
@@ -226,6 +238,7 @@ public class MainActivity extends Activity {
         isFirstLaunch = prefs.getBoolean("isFirstLaunch", true);
         childName = prefs.getString("childName", "");
         kittenApiKey = prefs.getString("kittenml_api_key", "");
+        soundMuted = prefs.getBoolean("soundMuted", false);
         correctAnswers = prefs.getInt("correctAnswers", 0);
         missedAnswers = prefs.getInt("missedAnswers", 0);
         level1Completed = prefs.getInt("level1Completed", 0);
@@ -244,6 +257,8 @@ public class MainActivity extends Activity {
         prefs.edit()
                 .putString("childName", childName)
                 .putBoolean("isFirstLaunch", isFirstLaunch)
+                .putBoolean("soundMuted", soundMuted)
+                .putString("kittenml_api_key", kittenApiKey)
                 .putInt("correctAnswers", correctAnswers)
                 .putInt("missedAnswers", missedAnswers)
                 .putInt("level1Completed", level1Completed)
@@ -259,6 +274,7 @@ public class MainActivity extends Activity {
         txtStats = findViewById(R.id.txtStats);
         txtLevelBadge = findViewById(R.id.txtLevelBadge);
         btnMenu = findViewById(R.id.btnMenu);
+        btnSettings = findViewById(R.id.btnSettings);
 
         // Mascot & Bubble & Keyboard
         capsView = findViewById(R.id.capsImage);
@@ -292,6 +308,7 @@ public class MainActivity extends Activity {
         btnMenu.setOnClickListener(v -> showMainMenu());
         txtPlayer.setOnClickListener(v -> showNameEntry());
         txtLevelBadge.setOnClickListener(v -> cycleDifficultyLevel());
+        btnSettings.setOnClickListener(v -> showParentalGate());
         btnLearnByListening.setOnClickListener(v -> startLearnByListening());
         btnSpellingBee.setOnClickListener(v -> startSpellingBee());
         btnRepeatWord.setOnClickListener(v -> repeatCurrentWord());
@@ -364,6 +381,155 @@ public class MainActivity extends Activity {
             txtLevelBadge.setVisibility(View.GONE);
             txtStats.setText("⭐ Welcome!");
         }
+    }
+
+    // ── Parent & Educator Gate / Settings ─────────────────────────────────────
+
+    private void showParentalGate() {
+        int num1 = random.nextInt(8) + 7; // 7..14
+        int num2 = random.nextInt(7) + 5; // 5..11
+        final int expectedAnswer = num1 + num2;
+
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("🔒 Parents & Grown-Ups Only");
+        builder.setMessage("Please solve this math question to enter settings:\n\nWhat is " + num1 + " + " + num2 + "?");
+
+        final EditText input = new EditText(this);
+        input.setInputType(InputType.TYPE_CLASS_NUMBER);
+        input.setHint("Answer");
+        input.setGravity(Gravity.CENTER);
+
+        int pad = dpToPx(20);
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setPadding(pad, pad / 2, pad, 0);
+        container.addView(input);
+        builder.setView(container);
+
+        builder.setPositiveButton("Enter", (dialog, which) -> {
+            String val = input.getText().toString().trim();
+            if (!val.isEmpty()) {
+                try {
+                    int ans = Integer.parseInt(val);
+                    if (ans == expectedAnswer) {
+                        showParentSettingsDialog();
+                        return;
+                    }
+                } catch (NumberFormatException ignored) {}
+            }
+            Toast.makeText(this, "Incorrect answer. Grown-up verification required.", Toast.LENGTH_SHORT).show();
+            hideSystemUI();
+        });
+
+        builder.setNegativeButton("Cancel", (dialog, which) -> {
+            dialog.dismiss();
+            hideSystemUI();
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.setOnDismissListener(d -> hideSystemUI());
+        dialog.show();
+    }
+
+    private void showParentSettingsDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("⚙️ Parent & Educator Settings");
+
+        int pad = dpToPx(20);
+        ScrollView scrollView = new ScrollView(this);
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(pad, pad, pad, pad);
+
+        // Child name section
+        TextView lblName = new TextView(this);
+        lblName.setText("Child's Name:");
+        lblName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        lblName.setTypeface(null, Typeface.BOLD);
+        layout.addView(lblName);
+
+        final EditText edtName = new EditText(this);
+        edtName.setText(childName);
+        edtName.setHint("Enter student name");
+        layout.addView(edtName);
+
+        // Sound mute toggle
+        final CheckBox chkMute = new CheckBox(this);
+        chkMute.setText("Mute All Audio / Quiet Mode");
+        chkMute.setChecked(soundMuted);
+        chkMute.setPadding(0, dpToPx(8), 0, dpToPx(8));
+        layout.addView(chkMute);
+
+        // KittenTTS API Key (Optional)
+        TextView lblApi = new TextView(this);
+        lblApi.setText("Optional KittenML TTS API Key:");
+        lblApi.setTextSize(TypedValue.COMPLEX_UNIT_SP, 15);
+        lblApi.setTypeface(null, Typeface.BOLD);
+        lblApi.setPadding(0, dpToPx(12), 0, 0);
+        layout.addView(lblApi);
+
+        TextView lblApiSub = new TextView(this);
+        lblApiSub.setText("All 120 words and 26 letters have built-in audio. An API key is optional for custom dynamic sentences.");
+        lblApiSub.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+        lblApiSub.setTextColor(Color.GRAY);
+        layout.addView(lblApiSub);
+
+        final EditText edtApi = new EditText(this);
+        edtApi.setText(kittenApiKey);
+        edtApi.setHint("Leave blank for built-in audio");
+        layout.addView(edtApi);
+
+        // Reset progress section
+        Button btnResetProgress = new Button(this);
+        btnResetProgress.setText("Reset Stars & Learning Stats");
+        btnResetProgress.setTextColor(Color.parseColor("#DC2626"));
+        btnResetProgress.setOnClickListener(v -> {
+            new AlertDialog.Builder(this)
+                    .setTitle("Reset All Progress?")
+                    .setMessage("Are you sure you want to reset all earned stars, completed words, and accuracy stats to zero?")
+                    .setPositiveButton("Reset", (d, w) -> {
+                        correctAnswers = 0;
+                        missedAnswers = 0;
+                        lettersExplored = 0;
+                        wordsCompletedInSession = 0;
+                        level1Completed = 0;
+                        level2Completed = 0;
+                        level3Completed = 0;
+                        savePreferences();
+                        updateScoreDisplay();
+                        Toast.makeText(this, "Progress has been reset.", Toast.LENGTH_SHORT).show();
+                    })
+                    .setNegativeButton("Cancel", null)
+                    .show();
+        });
+        layout.addView(btnResetProgress);
+
+        scrollView.addView(layout);
+        builder.setView(scrollView);
+
+        builder.setPositiveButton("Save Settings", (dialog, which) -> {
+            String newName = edtName.getText().toString().trim();
+            if (!newName.isEmpty()) {
+                childName = newName.substring(0, 1).toUpperCase() + newName.substring(1).toLowerCase();
+            }
+            soundMuted = chkMute.isChecked();
+            kittenApiKey = edtApi.getText().toString().trim();
+
+            savePreferences();
+            updatePlayerHeader();
+            updateScoreDisplay();
+            Toast.makeText(this, "Settings saved!", Toast.LENGTH_SHORT).show();
+            hideSystemUI();
+        });
+
+        builder.setNegativeButton("Close", (dialog, which) -> {
+            dialog.dismiss();
+            hideSystemUI();
+        });
+
+        AlertDialog dialog = builder.create();
+        dialog.setOnDismissListener(d -> hideSystemUI());
+        dialog.show();
     }
 
     // ── 1. Name Entry Mode ────────────────────────────────────────────────────
@@ -473,6 +639,10 @@ public class MainActivity extends Activity {
         anim.playTogether(sX, sY);
         anim.setDuration(240);
         anim.start();
+
+        if (capsView != null) {
+            capsView.speakLetter(upper);
+        }
 
         playSoundOrSpeak("phonics_" + Character.toLowerCase(upper), spokenPhrase);
     }
@@ -602,6 +772,10 @@ public class MainActivity extends Activity {
             // Incorrect letter — gentle buzz
             triggerHaptic(false);
 
+            if (capsView != null) {
+                capsView.setState(CapybaraView.AnimState.GENTLE_GUIDANCE);
+            }
+
             wordMistakes++;
             missedAnswers++;
             savePreferences();
@@ -634,6 +808,10 @@ public class MainActivity extends Activity {
     }
 
     private void handleWordCompleted() {
+        if (capsView != null) {
+            capsView.setState(CapybaraView.AnimState.PRAISE);
+        }
+
         correctAnswers++;
         wordsCompletedInSession++;
 
@@ -715,8 +893,9 @@ public class MainActivity extends Activity {
             speechBubble.showText(prompt);
         }
 
-        // Animate Caps mouth for the introduction
+        // Animate Caps for the introduction: inquisitive/questioning state
         if (capsView != null) {
+            capsView.setState(CapybaraView.AnimState.QUESTION);
             capsView.startTalkingContinuous();
         }
 
@@ -739,12 +918,21 @@ public class MainActivity extends Activity {
         }
 
         char c = word.charAt(index);
+        if (capsView != null) {
+            capsView.speakLetter(c);
+        }
         playRawAudio("letter_" + Character.toLowerCase(c), () -> {
             mainHandler.postDelayed(() -> spellWordSequentially(word, index + 1), 350);
         });
     }
 
     private void playRawAudio(String rawName, Runnable onFinished) {
+        if (soundMuted) {
+            if (onFinished != null) {
+                mainHandler.postDelayed(onFinished, 300);
+            }
+            return;
+        }
         requestAppAudioFocus();
         int resId = 0;
         if (rawName != null) {
@@ -921,20 +1109,42 @@ public class MainActivity extends Activity {
     private void playSoundOrSpeak(String rawResourceName, String textFallback) {
         if (textFallback == null || textFallback.trim().isEmpty()) return;
 
-        // Request audio focus so app audio ducks background sounds
-        requestAppAudioFocus();
+        // Request audio focus so app audio ducks background sounds (only if unmuted)
+        if (!soundMuted) {
+            requestAppAudioFocus();
+        }
 
         // 1. Show text in speech bubble
         if (speechBubble != null) {
             speechBubble.showText(textFallback);
         }
 
-        // 2. Animate mouth matched to syllable count
+        // 2. Animate character and mouth matched to dialogue context & syllables
         int syllables = estimateSyllables(textFallback);
         if (capsView != null) {
             if (stopTalkingRunnable != null) {
                 mainHandler.removeCallbacks(stopTalkingRunnable);
                 stopTalkingRunnable = null;
+            }
+
+            // Map dialogue trigger to Caps animation state
+            if (rawResourceName != null && (rawResourceName.startsWith("cheer_") || rawResourceName.startsWith("level_up_") || rawResourceName.startsWith("welcome_"))
+                    || textFallback.contains("Awesome") || textFallback.contains("EXCELLENT") || textFallback.contains("SUPERSTAR")) {
+                capsView.setState(CapybaraView.AnimState.PRAISE);
+            } else if (rawResourceName != null && (rawResourceName.startsWith("soothing_") || rawResourceName.contains("retry"))
+                    || textFallback.toLowerCase().contains("try again")) {
+                capsView.setState(CapybaraView.AnimState.GENTLE_GUIDANCE);
+            } else if (rawResourceName != null && (rawResourceName.startsWith("ask_") || rawResourceName.startsWith("hint_"))
+                    || textFallback.contains("?")) {
+                capsView.setState(CapybaraView.AnimState.QUESTION);
+            } else if (capsView.getState() == CapybaraView.AnimState.IDLE) {
+                capsView.setState(CapybaraView.AnimState.SPEAKING);
+            }
+
+            // If speaking an individual letter, set its specific viseme
+            if (rawResourceName != null && (rawResourceName.startsWith("letter_") || rawResourceName.startsWith("phonics_"))) {
+                char ch = rawResourceName.charAt(rawResourceName.length() - 1);
+                capsView.setViseme(CapybaraView.getVisemeForChar(ch));
             }
 
             if (syllables <= 2) {
@@ -949,9 +1159,19 @@ public class MainActivity extends Activity {
             }
         }
 
-        // 3. Try custom audio from res/raw if present
+        // If sound is muted, visual bubble and gestures have been presented; skip audio playback
+        if (soundMuted) {
+            return;
+        }
+
+        // Check if text is personalized with the child's dynamic name
+        boolean isDynamicPersonalized = !TextUtils.isEmpty(childName)
+                && !"Friend".equalsIgnoreCase(childName)
+                && textFallback.contains(childName);
+
+        // 3. Try custom audio from res/raw if present (only for non-personalized static prompts)
         int resId = 0;
-        if (rawResourceName != null) {
+        if (!isDynamicPersonalized && rawResourceName != null) {
             String cleanName = rawResourceName.toLowerCase().replaceAll("[^a-z0-9_]", "_");
             resId = getResources().getIdentifier(cleanName, "raw", getPackageName());
             if (resId == 0 && cleanName.startsWith("phonics_")) {
@@ -984,31 +1204,18 @@ public class MainActivity extends Activity {
             } catch (Exception ignored) {}
         }
 
-        // 4. Try local KittenTTS cached file
-        File cachedSpeech = KittenTTSClient.getCachedAudioFile(this, textFallback);
-        if (cachedSpeech.exists() && cachedSpeech.length() > 0) {
-            playAudioFile(cachedSpeech);
-            return;
-        }
+        // 4. On-device KittenTTS real-time neural speech synthesis (offline, instant Caps voice)
+        KittenTTSClient.synthesizeSpeech(this, textFallback, new KittenTTSClient.SpeechCallback() {
+            @Override
+            public void onSuccess(File audioFile) {
+                playAudioFile(audioFile);
+            }
 
-        // 5. Try dynamic KittenTTS API synthesis if API key is provided
-        if (!TextUtils.isEmpty(kittenApiKey) && KittenTTSClient.isNetworkAvailable(this)) {
-            KittenTTSClient.synthesizeSpeech(this, kittenApiKey, textFallback, new KittenTTSClient.SpeechCallback() {
-                @Override
-                public void onSuccess(File audioFile) {
-                    playAudioFile(audioFile);
-                }
-
-                @Override
-                public void onFailure(Exception error) {
-                    abandonAppAudioFocus();
-                }
-            });
-            return;
-        }
-
-        // Graceful silent completion for speech bubble without any robotic TTS
-        mainHandler.postDelayed(this::abandonAppAudioFocus, 1200);
+            @Override
+            public void onFailure(Exception error) {
+                abandonAppAudioFocus();
+            }
+        });
     }
 
     private void playAudioFile(File file) {
@@ -1127,6 +1334,72 @@ public class MainActivity extends Activity {
             }
         } catch (Exception ignored) {
             return false;
+        }
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            hideSystemUI();
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        hideSystemUI();
+        if (capsView != null) {
+            capsView.resumeAnimations();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+            try { mediaPlayer.pause(); } catch (Exception ignored) {}
+        }
+        abandonAppAudioFocus();
+        if (stopTalkingRunnable != null) {
+            mainHandler.removeCallbacks(stopTalkingRunnable);
+            stopTalkingRunnable = null;
+        }
+        if (capsView != null) {
+            capsView.pauseAnimations();
+            capsView.stopTalking();
+        }
+        super.onPause();
+    }
+
+    @Override
+    protected void onStop() {
+        if (mediaPlayer != null) {
+            try { mediaPlayer.stop(); mediaPlayer.release(); } catch (Exception ignored) {}
+            mediaPlayer = null;
+        }
+        super.onStop();
+    }
+
+    private void hideSystemUI() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                WindowInsetsController controller = getWindow().getInsetsController();
+                if (controller != null) {
+                    controller.hide(WindowInsets.Type.statusBars() | WindowInsets.Type.navigationBars());
+                    controller.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);
+                }
+            } catch (Exception ignored) {}
+        } else {
+            try {
+                getWindow().getDecorView().setSystemUiVisibility(
+                        View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                        | View.SYSTEM_UI_FLAG_FULLSCREEN
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                        | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                );
+            } catch (Exception ignored) {}
         }
     }
 
